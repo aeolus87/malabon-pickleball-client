@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>OAuth Redirect Handler</title>
+    <script>
+      // This file handles Google OAuth redirects by converting direct URLs to hash-based URLs
+      window.onload = function () {
+        const path = window.location.pathname;
+        const search = window.location.search;
+
+        // If this is a Google callback URL
+        if (
+          path.includes("/auth/google/callback") &&
+          search.includes("code=")
+        ) {
+          console.log(
+            "OAuth redirect handler: Converting direct callback to hash-based route"
+          );
+          // Redirect to the hash-based route with the same query parameters
+          window.location.replace(`/#${path}${search}`);
+        } else {
+          // For any other paths, just redirect to the app root
+          window.location.replace("/#/");
+        }
+      };
+    </script>
+  </head>
+  <body>
+    <div
+      style="
+        text-align: center;
+        font-family: Arial, sans-serif;
+        margin-top: 50px;
+      "
+    >
+      <h2>Redirecting...</h2>
+      <p>Please wait while we redirect you to the application.</p>
+      <div
+        style="
+          margin: 20px auto;
+          width: 50px;
+          height: 50px;
+          border: 5px solid #f3f3f3;
+          border-top: 5px solid #3498db;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        "
+      ></div>
+    </div>
+    <style>
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </body>
+</html>
