@@ -24,11 +24,8 @@ const ClubDetailPage: React.FC = observer(() => {
     const loadData = async () => {
       if (!clubId) return;
 
-      // Load club details
-      await clubStore.fetchClubById(clubId);
-
-      // Load club members
-      await clubStore.fetchClubMembers(clubId);
+      // Load club details and members in a single request
+      await clubStore.fetchClubWithMembers(clubId);
 
       // Load user clubs to check if user is a member
       await clubStore.fetchUserClubs();
@@ -47,8 +44,8 @@ const ClubDetailPage: React.FC = observer(() => {
     try {
       await clubStore.joinClub(clubId);
 
-      // Refresh club members
-      await clubStore.fetchClubMembers(clubId);
+      // Refresh club details and members in a single request
+      await clubStore.fetchClubWithMembers(clubId);
 
       // Refresh user clubs
       await clubStore.fetchUserClubs();
@@ -64,8 +61,8 @@ const ClubDetailPage: React.FC = observer(() => {
     try {
       await clubStore.leaveClub(clubId);
 
-      // Refresh club members
-      await clubStore.fetchClubMembers(clubId);
+      // Refresh club details and members in a single request
+      await clubStore.fetchClubWithMembers(clubId);
 
       // Refresh user clubs
       await clubStore.fetchUserClubs();

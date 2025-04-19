@@ -104,6 +104,29 @@ class ClubStore {
     }
   }
 
+  // New method to fetch club with members in a single request
+  async fetchClubWithMembers(clubId: string) {
+    this.loading = true;
+    this.clubMembersLoading = true;
+    try {
+      const response = await axios.get(`/clubs/${clubId}/with-members`);
+      runInAction(() => {
+        this.currentClub = response.data.club;
+        this.clubMembers = response.data.members;
+        this.loading = false;
+        this.clubMembersLoading = false;
+      });
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.error = "Failed to fetch club with members";
+        this.loading = false;
+        this.clubMembersLoading = false;
+      });
+      return false;
+    }
+  }
+
   toggleClubSelection(clubId: string) {
     if (this.selectedClubs.includes(clubId)) {
       this.selectedClubs = this.selectedClubs.filter((id) => id !== clubId);
@@ -254,35 +277,11 @@ class ClubStore {
 
     this.loading = true;
     try {
-      // First get all clubs with member counts
-      const countsResponse = await axios.get("/clubs/with-counts");
-      const clubsWithCounts = countsResponse.data;
-
-      // Then get the user profile to get their club IDs
-      const profileResponse = await axios.get("/users/profile");
-
-      let userClubs: Club[] = [];
-
-      // Extract club IDs from the profile response
-      if (
-        profileResponse.data.clubs &&
-        Array.isArray(profileResponse.data.clubs)
-      ) {
-        const clubIds = profileResponse.data.clubs.map(
-          (club: Club) => club._id
-        );
-
-        // If user has clubs, filter from the clubs with counts
-        if (clubIds.length > 0) {
-          // Filter for just the user's clubs from the already fetched clubs with counts
-          userClubs = clubsWithCounts.filter((club: Club) =>
-            clubIds.includes(club._id.toString())
-          );
-        }
-      }
+      // Use the new optimized endpoint that returns user clubs with details in a single request
+      const response = await axios.get("/users/clubs");
 
       runInAction(() => {
-        this.userClubs = userClubs;
+        this.userClubs = response.data;
         this.loading = false;
       });
 
