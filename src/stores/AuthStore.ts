@@ -460,14 +460,18 @@ class AuthStore {
       // Clean up the code verifier on error
       localStorage.removeItem("codeVerifier");
 
-      // Check if it's an invalid_grant error but we're already logged in
-      const isInvalidGrant =
-        error.response?.data?.error === "invalid_grant" ||
-        error.response?.data?.details === "invalid_grant";
+      // Get error info for better handling
+      const status = error.response?.status;
+      const errorMsg = error.response?.data?.error || error.message;
+      const isAuthError = status === 401 || status === 403;
 
-      if (isInvalidGrant && this.isAuthenticated) {
+      // Check for specific error conditions
+
+      // Check if user is already authenticated despite the error
+      if (this.isAuthenticated) {
         console.log(
-          "Invalid grant error but already authenticated, continuing with current session"
+          "Auth error but already authenticated, continuing with current session",
+          { status, errorMsg }
         );
         runInAction(() => {
           this.loading = false;
@@ -476,19 +480,31 @@ class AuthStore {
         return this.user;
       }
 
+      // Check if we need to try session check as a fallback
+      if (isAuthError) {
+        console.log("Received auth error, trying session check as fallback");
+        try {
+          // Try checking the session as a fallback
+          const isValidSession = await this.checkSession();
+          if (isValidSession && this.isAuthenticated) {
+            console.log("Session check succeeded after code exchange failure");
+            return this.user;
+          }
+        } catch (sessionError) {
+          console.error("Session check also failed:", sessionError);
+        }
+      }
+
       console.error("Code exchange error details:", {
         message: error.message,
-        response: error.response
-          ? {
-              status: error.response.status,
-              data: error.response.data,
-            }
-          : "No response",
+        status,
+        data: error.response?.data,
       });
 
       runInAction(() => {
-        this.error =
-          error.response?.data?.error || "Failed to exchange code for token";
+        this.error = isAuthError
+          ? "Authentication failed. Please try logging in again."
+          : errorMsg || "Failed to exchange code for token";
         this.loading = false;
         this.sessionChecked = true;
       });

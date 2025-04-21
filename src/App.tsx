@@ -7,6 +7,7 @@ import { authStore } from "./stores/AuthStore";
 import { socketStore } from "./stores/SocketStore";
 import { userStore } from "./stores/UserStore";
 import Navbar from "./components/Navbar";
+import { printConsoleWelcome, warmupServer } from "./utils/consoleUtils";
 import "./index.css";
 
 // Use lazy loading for routes to improve initial page load time
@@ -133,8 +134,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(
     // Show loading state while authentication check is in progress
     if (!sessionChecked) {
       return (
-        <div className="flex items-center justify-center min-h-screen dark:bg-dark-bg">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-500 dark:border-brand-400"></div>
+        <div className="flex flex-col items-center justify-center min-h-screen dark:bg-dark-bg">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-500 dark:border-brand-400 mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300 text-sm max-w-xs text-center">
+            Verifying your session...
+          </p>
+          <p className="text-gray-500 dark:text-gray-400 text-xs max-w-xs text-center mt-2">
+            First load might take a moment if our server is waking up.
+          </p>
         </div>
       );
     }
@@ -146,14 +153,29 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(
 
 // Loading component for suspense fallback
 const LoadingSpinner = () => (
-  <div className="flex items-center justify-center min-h-screen dark:bg-dark-bg">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-500 dark:border-brand-400"></div>
+  <div className="flex flex-col items-center justify-center min-h-screen dark:bg-dark-bg">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-500 dark:border-brand-400 mb-4"></div>
+    <p className="text-gray-600 dark:text-gray-300 text-sm max-w-xs text-center">
+      Loading Malabon PickleBallers...
+    </p>
+    <p className="text-gray-500 dark:text-gray-400 text-xs max-w-xs text-center mt-2">
+      First load might take a moment if our server is waking up.
+    </p>
   </div>
 );
 
 // App component
 const App: React.FC = observer(() => {
   const location = useLocation();
+
+  // Initialize server connection and display welcome message
+  useEffect(() => {
+    // Print welcome ASCII art to console
+    printConsoleWelcome();
+
+    // Call warmup endpoint to initialize the server faster
+    warmupServer();
+  }, []);
 
   // Combined effect for session checking and socket initialization
   useEffect(() => {

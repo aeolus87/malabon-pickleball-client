@@ -56,19 +56,24 @@ const LoginPage = observer(({ deletedAccount }: LoginPageProps = {}) => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-dark-bg py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
-            Sign in to your account
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-dark-bg py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
+      <div className="max-w-md w-full space-y-6 bg-white dark:bg-dark-card p-8 rounded-lg shadow-sm">
+        <div className="flex flex-col items-center">
+          <img
+            src="/mplogos.png"
+            alt="Malabon PickleBallers Logo"
+            className="h-16 w-16 mb-2"
+          />
+          <h2 className="text-center text-2xl font-bold text-gray-900 dark:text-gray-100">
+            Welcome to Malabon PickleBallers
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-            Join the Malabon PickleBallers community
+            Sign in to join the community
           </p>
         </div>
 
         {accountDeleted && (
-          <div className="rounded-md bg-yellow-50 dark:bg-yellow-900/30 p-4 my-4 border border-yellow-200 dark:border-yellow-800">
+          <div className="rounded-md bg-yellow-50 dark:bg-yellow-900/30 p-4 border border-yellow-200 dark:border-yellow-800">
             <div className="text-sm text-yellow-800 dark:text-yellow-300">
               <strong>Account Deleted</strong> - Your account has been deleted.
               Please sign in with Google to create a new account.
@@ -77,7 +82,7 @@ const LoginPage = observer(({ deletedAccount }: LoginPageProps = {}) => {
         )}
 
         {error && (
-          <div className="rounded-md bg-red-50 dark:bg-red-900/30 p-4 my-4 border border-red-200 dark:border-red-800">
+          <div className="rounded-md bg-red-50 dark:bg-red-900/30 p-4 border border-red-200 dark:border-red-800">
             <div className="text-sm text-red-700 dark:text-red-300">
               {error}
             </div>
@@ -85,24 +90,26 @@ const LoginPage = observer(({ deletedAccount }: LoginPageProps = {}) => {
         )}
 
         {authError && (
-          <div className="rounded-md bg-red-50 dark:bg-red-900/30 p-4 my-4 border border-red-200 dark:border-red-800">
+          <div className="rounded-md bg-red-50 dark:bg-red-900/30 p-4 border border-red-200 dark:border-red-800">
             <div className="text-sm text-red-700 dark:text-red-300">
               {authError}
             </div>
           </div>
         )}
 
-        <div className="mt-8 space-y-6">
-          <button
-            onClick={handleGoogleLogin}
-            disabled={isLoading}
-            className="group relative w-full flex justify-center py-3 px-4 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-dark-card hover:bg-gray-50 dark:hover:bg-dark-muted focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-50 dark:focus:ring-offset-dark-bg focus:ring-brand-500 disabled:opacity-50 transition-colors duration-200"
-          >
-            <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-              <FcGoogle size={20} />
-            </span>
-            {isLoading ? "Connecting..." : "Sign in with Google"}
-          </button>
+        <button
+          onClick={handleGoogleLogin}
+          disabled={isLoading}
+          className="group relative w-full flex justify-center py-3 px-4 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-dark-card hover:bg-gray-50 dark:hover:bg-dark-muted focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-50 dark:focus:ring-offset-dark-bg focus:ring-brand-500 disabled:opacity-50 transition-colors duration-200"
+        >
+          <span className="absolute left-0 inset-y-0 flex items-center pl-3">
+            <FcGoogle size={20} />
+          </span>
+          {isLoading ? "Connecting..." : "Sign in with Google"}
+        </button>
+
+        <div className="text-center text-xs text-gray-500 dark:text-gray-400 mt-4">
+          By signing in, you agree to our Terms of Service and Privacy Policy
         </div>
       </div>
     </div>

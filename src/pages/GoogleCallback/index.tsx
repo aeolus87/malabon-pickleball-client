@@ -4,144 +4,114 @@ import { authStore } from "../../stores/AuthStore";
 
 const GoogleCallback: React.FC = () => {
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [debugMsg, setDebugMsg] = useState(
-    "Processing Google authentication..."
-  );
   const [hasAttemptedExchange, setHasAttemptedExchange] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 2;
 
   useEffect(() => {
-    const handleGoogleCallback = async () => {
-      if (hasAttemptedExchange) {
-        return; // Prevent duplicate exchange attempts
-      }
+    // Add a small delay before processing to ensure backend is ready
+    const processingDelay = setTimeout(() => {
+      handleGoogleCallback();
+    }, 300);
 
+    return () => clearTimeout(processingDelay);
+  }, [retryCount]);
+
+  const handleGoogleCallback = async () => {
+    if (hasAttemptedExchange && retryCount === 0) {
+      return; // Prevent duplicate exchange attempts on first try
+    }
+
+    if (retryCount === 0) {
       setHasAttemptedExchange(true);
+    }
 
-      try {
-        setIsLoading(true);
-        setDebugMsg("Getting authentication code from URL...");
-
-        // Get the code from URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get("code");
-
-        if (!code) {
-          throw new Error("No authentication code received from Google");
-        }
-
-        setDebugMsg("Authentication code received, exchanging for token...");
-
-        // Exchange code for token
-        try {
-          const user = await authStore.exchangeCodeForToken(code);
-          console.log(
-            "Token exchange successful, user:",
-            user ? "exists" : "null"
-          );
-
-          if (user) {
-            // Clear any previous errors
-            authStore.clearError();
-            setDebugMsg("Authentication successful, navigating...");
-
-            // Navigate based on profile completion status
-            if (user.isProfileComplete) {
-              console.log("User profile is complete, navigating to venues");
-              setTimeout(() => {
-                navigate("/venues", { replace: true });
-              }, 100);
-            } else {
-              console.log(
-                "User profile is incomplete, navigating to profile completion"
-              );
-              setTimeout(() => {
-                navigate("/profile/complete", { replace: true });
-              }, 100);
-            }
-          } else {
-            throw new Error("Failed to authenticate - user object is null");
-          }
-        } catch (error) {
-          console.error("Error during code exchange:", error);
-
-          // If we get invalid_grant, check if we're already logged in
-          if (authStore.isAuthenticated) {
-            console.log(
-              "Already authenticated despite exchange error, continuing..."
-            );
-            setDebugMsg("Already logged in, redirecting...");
-
-            // Navigate to appropriate page
-            setTimeout(() => {
-              if (authStore.isProfileComplete) {
-                navigate("/venues", { replace: true });
-              } else {
-                navigate("/profile/complete", { replace: true });
-              }
-            }, 100);
-            return;
-          }
-
-          throw error;
-        }
-      } catch (err) {
-        console.error("Google auth callback error:", err);
-        setError(
-          err instanceof Error
-            ? err.message
-            : "An error occurred during authentication"
-        );
-        setDebugMsg("Authentication error, redirecting to login...");
-
-        // If there's an error, navigate to login page after a short delay
-        setTimeout(() => {
-          navigate("/login", { replace: true });
-        }, 3000);
-      } finally {
-        setIsLoading(false);
+    try {
+      // First check if already authenticated
+      if (authStore.isAuthenticated) {
+        console.log("Already authenticated, redirecting...");
+        navigateToAppropriateRoute();
+        return;
       }
-    };
 
-    // Call the handler when component mounts
-    handleGoogleCallback();
-  }, [navigate, hasAttemptedExchange]);
+      // Get the code from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get("code");
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
-        <p className="text-gray-600">Processing authentication...</p>
-        {debugMsg && <p className="text-xs text-gray-400 mt-2">{debugMsg}</p>}
-      </div>
-    );
-  }
+      if (!code) {
+        throw new Error("No authentication code received from Google");
+      }
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <div className="bg-red-50 p-4 rounded-md mb-4 max-w-md text-center">
-          <h2 className="text-lg font-semibold text-red-700 mb-2">
-            Authentication Failed
-          </h2>
-          <p className="text-red-600">{error}</p>
-          <p className="text-gray-600 mt-4">Redirecting to login page...</p>
-          {debugMsg && <p className="text-xs text-gray-400 mt-2">{debugMsg}</p>}
-        </div>
-      </div>
-    );
-  }
+      // Exchange code for token - optimized flow without delays
+      try {
+        const user = await authStore.exchangeCodeForToken(code);
 
+        if (user) {
+          // Clear any previous errors
+          authStore.clearError();
+          navigateToAppropriateRoute();
+        } else {
+          throw new Error("Failed to authenticate");
+        }
+      } catch (error: any) {
+        console.error("Error during code exchange:", error);
+
+        // If we get a 401 error but we're still in retry attempts, try again
+        if (error.response?.status === 401 && retryCount < MAX_RETRIES) {
+          console.log(
+            `Authentication retry attempt ${retryCount + 1}/${MAX_RETRIES}`
+          );
+          setRetryCount((prev) => prev + 1);
+          return;
+        }
+
+        // If we get invalid_grant, check if we're already logged in
+        if (authStore.isAuthenticated) {
+          console.log("Already authenticated despite error, continuing...");
+          navigateToAppropriateRoute();
+          return;
+        }
+
+        throw error;
+      }
+    } catch (err) {
+      console.error("Google auth callback error:", err);
+
+      // If we've exhausted retries and still failed
+      if (retryCount >= MAX_RETRIES) {
+        console.log("Max retries reached, redirecting to login");
+      }
+
+      // If there's an error, navigate to login page immediately
+      navigate("/login", { replace: true });
+    }
+  };
+
+  // Helper function to navigate based on profile completion
+  const navigateToAppropriateRoute = () => {
+    if (authStore.isProfileComplete) {
+      navigate("/venues", { replace: true });
+    } else {
+      navigate("/profile/complete", { replace: true });
+    }
+  };
+
+  // Show a clean loading spinner without debug messages
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <div className="mb-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-        </div>
-        <p className="text-gray-600">Finalizing authentication...</p>
-        {debugMsg && <p className="text-xs text-gray-400 mt-2">{debugMsg}</p>}
+    <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-dark-bg">
+      <div className="relative">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-500 dark:border-brand-400"></div>
+        <img
+          src="/mplogos.png"
+          alt="Malabon Logo"
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8"
+        />
       </div>
+      {retryCount > 0 && (
+        <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">
+          Retrying authentication... ({retryCount}/{MAX_RETRIES})
+        </p>
+      )}
     </div>
   );
 };
