@@ -7,7 +7,7 @@ import { authStore } from "./stores/AuthStore";
 import { socketStore } from "./stores/SocketStore";
 import { userStore } from "./stores/UserStore";
 import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
+import "./index.css";
 
 // Use lazy loading for routes to improve initial page load time
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -18,7 +18,7 @@ const VenuesPage = lazy(() => import("./pages/VenuesPage"));
 const ClubsPage = lazy(() => import("./pages/ClubsPage"));
 const ClubDetailPage = lazy(() => import("./pages/ClubDetailPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
-const GoogleCallback = lazy(() => import("./pages/GoogleCallback"));
+const GoogleCallbackPage = lazy(() => import("./pages/GoogleCallback"));
 const ProfileComplete = lazy(() => import("./pages/ProfileComplete"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const SuperAdminPage = lazy(() => import("./pages/SuperAdminPage"));
@@ -219,11 +219,14 @@ const App: React.FC = observer(() => {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/auth/google/callback"
+            element={<GoogleCallbackPage />}
+          />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
-          <Route path="/login" element={<LoginPage />} />
           <Route path="/superadmin/login" element={<SuperAdminLogin />} />
-          <Route path="/auth/google/callback" element={<GoogleCallback />} />
 
           {/* Protected Routes */}
           <Route
@@ -266,6 +269,8 @@ const App: React.FC = observer(() => {
               </ProtectedRoute>
             }
           />
+
+          {/* Admin Routes */}
           <Route
             path="/admin"
             element={
@@ -274,6 +279,8 @@ const App: React.FC = observer(() => {
               </ProtectedRoute>
             }
           />
+
+          {/* Super Admin Routes */}
           <Route
             path="/superadmin"
             element={
@@ -287,7 +294,6 @@ const App: React.FC = observer(() => {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
-      <Footer />
     </Navbar>
   );
 });
