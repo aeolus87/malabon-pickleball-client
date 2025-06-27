@@ -116,13 +116,13 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
           className={`fixed inset-y-0 left-0 bg-white dark:bg-dark-card dark:border-dark-border transition-all duration-300 ease-in-out z-30 border-r border-gray-200 shadow-sm
             ${
               isMobile
-                ? `${isMenuOpen ? "translate-x-0" : "-translate-x-full"} w-64`
-                : `${isSidebarCollapsed ? "w-20" : "w-60"} lg:translate-x-0`
+                ? `${isMenuOpen ? "translate-x-0" : "-translate-x-full"} w-72`
+                : `${isSidebarCollapsed ? "w-16" : "w-64"} lg:translate-x-0`
             }`}
         >
           {/* Sidebar Header with Logo */}
           <div
-            className={`p-4 border-b border-gray-200 dark:border-dark-border flex items-center ${
+            className={`${isSidebarCollapsed && !isMobile ? "p-3" : "p-4"} border-b border-gray-200 dark:border-dark-border flex items-center ${
               isSidebarCollapsed && !isMobile
                 ? "justify-center"
                 : "justify-between"
@@ -197,7 +197,7 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
 
           {/* User Profile Section */}
           <div
-            className={`p-4 border-b border-gray-200 dark:border-dark-border ${
+            className={`${isSidebarCollapsed && !isMobile ? "p-3" : "p-4"} border-b border-gray-200 dark:border-dark-border ${
               isSidebarCollapsed && !isMobile ? "flex justify-center" : ""
             }`}
           >
@@ -245,24 +245,24 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
           </div>
 
           {/* Navigation Links */}
-          <div className="flex-grow overflow-y-auto py-4">
-            <ul>
+          <div className="flex-grow overflow-y-auto py-2">
+            <ul className={`space-y-1 ${isSidebarCollapsed && !isMobile ? "px-2" : "px-3"}`}>
               {navigationLinks.map((item) => (
-                <li key={item.path} className="mb-1">
+                <li key={item.path}>
                   <Link
                     to={item.path}
                     className={`flex items-center ${
                       isSidebarCollapsed && !isMobile
-                        ? "justify-center"
-                        : "px-4"
-                    } py-3 text-sm font-medium transition-colors rounded-md ${
+                        ? "justify-center px-2 py-3"
+                        : "px-3 py-2.5"
+                    } text-sm font-medium transition-colors rounded-lg ${
                       isActive(item.path)
                         ? "bg-brand-100 text-brand-800 dark:bg-brand-900/30 dark:text-brand-300"
                         : "text-gray-600 hover:bg-brand-50 hover:text-brand-700 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-brand-300"
                     }`}
                     onClick={() => isMobile && setIsMenuOpen(false)}
                   >
-                    <span className="mr-3">{item.icon}</span>
+                    <span className={`${!(isSidebarCollapsed && !isMobile) ? "mr-3" : ""}`}>{item.icon}</span>
                     {!(isSidebarCollapsed && !isMobile) && (
                       <span>{item.label}</span>
                     )}
@@ -272,21 +272,21 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
 
               {/* Admin link if user is admin */}
               {isAdmin && (
-                <li className="mb-1">
+                <li>
                   <Link
                     to="/admin"
                     className={`flex items-center ${
                       isSidebarCollapsed && !isMobile
-                        ? "justify-center"
-                        : "px-4"
-                    } py-3 text-sm font-medium transition-colors rounded-md ${
+                        ? "justify-center px-2 py-3"
+                        : "px-3 py-2.5"
+                    } text-sm font-medium transition-colors rounded-lg ${
                       isActive("/admin")
                         ? "bg-brand-100 text-brand-800 dark:bg-brand-900/30 dark:text-brand-300"
                         : "text-gray-600 hover:bg-brand-50 hover:text-brand-700 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-brand-300"
                     }`}
                     onClick={() => isMobile && setIsMenuOpen(false)}
                   >
-                    <span className="mr-3">
+                    <span className={`${!(isSidebarCollapsed && !isMobile) ? "mr-3" : ""}`}>
                       <Settings size={20} />
                     </span>
                     {!(isSidebarCollapsed && !isMobile) && (
@@ -298,21 +298,21 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
 
               {/* Super Admin link if user is super admin */}
               {user?.isSuperAdmin && (
-                <li className="mb-1">
+                <li>
                   <Link
                     to="/superadmin"
                     className={`flex items-center ${
                       isSidebarCollapsed && !isMobile
-                        ? "justify-center"
-                        : "px-4"
-                    } py-3 text-sm font-medium transition-colors rounded-md ${
+                        ? "justify-center px-2 py-3"
+                        : "px-3 py-2.5"
+                    } text-sm font-medium transition-colors rounded-lg ${
                       isActive("/superadmin")
                         ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
                         : "text-gray-600 hover:bg-purple-50 hover:text-purple-700 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-purple-300"
                     }`}
                     onClick={() => isMobile && setIsMenuOpen(false)}
                   >
-                    <span className="mr-3">
+                    <span className={`${!(isSidebarCollapsed && !isMobile) ? "mr-3" : ""}`}>
                       <Settings size={20} />
                     </span>
                     {!(isSidebarCollapsed && !isMobile) && (
@@ -323,14 +323,14 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
               )}
 
               {/* Theme Toggle */}
-              <li className="mb-1">
+              <li>
                 <button
                   onClick={toggleTheme}
                   className={`w-full flex items-center ${
-                    isSidebarCollapsed && !isMobile ? "justify-center" : "px-4"
-                  } py-3 text-sm font-medium transition-colors rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-gray-100`}
+                    isSidebarCollapsed && !isMobile ? "justify-center px-2 py-3" : "px-3 py-2.5"
+                  } text-sm font-medium transition-colors rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-gray-100`}
                 >
-                  <span className="mr-3">
+                  <span className={`${!(isSidebarCollapsed && !isMobile) ? "mr-3" : ""}`}>
                     {theme === "dark" ? (
                       <Sun size={20} className="text-yellow-400" />
                     ) : (
@@ -344,14 +344,14 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
               </li>
 
               {/* Logout */}
-              <li className="mb-1 mt-4">
+              <li className="mt-4">
                 <button
                   onClick={handleLogout}
                   className={`w-full flex items-center ${
-                    isSidebarCollapsed && !isMobile ? "justify-center" : "px-4"
-                  } py-3 text-sm font-medium transition-colors rounded-md text-red-600 hover:bg-red-50 hover:text-red-800 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300`}
+                    isSidebarCollapsed && !isMobile ? "justify-center px-2 py-3" : "px-3 py-2.5"
+                  } text-sm font-medium transition-colors rounded-lg text-red-600 hover:bg-red-50 hover:text-red-800 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300`}
                 >
-                  <span className="mr-3">
+                  <span className={`${!(isSidebarCollapsed && !isMobile) ? "mr-3" : ""}`}>
                     <LogOut size={20} />
                   </span>
                   {!(isSidebarCollapsed && !isMobile) && <span>Logout</span>}
@@ -363,7 +363,7 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
 
         {/* Mobile menu button - only visible on mobile */}
         {isMobile && !isMenuOpen && (
-          <div className="fixed top-0 left-0 right-0 z-30 bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-gray-800 h-14 flex items-center px-4 shadow-sm">
+          <div className="fixed top-0 left-0 right-0 z-30 bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-gray-800 h-16 flex items-center px-4 shadow-sm">
             <button
               className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
               onClick={toggleMenu}
@@ -395,10 +395,10 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
         <div
           className={`flex-1 transition-all duration-300 ${
             isMobile
-              ? "ml-0 pt-14"
+              ? "ml-0 pt-16"
               : isSidebarCollapsed
-              ? "lg:ml-20"
-              : "lg:ml-60"
+              ? "lg:ml-16"
+              : "lg:ml-64"
           }`}
         >
           <main className="min-h-screen">

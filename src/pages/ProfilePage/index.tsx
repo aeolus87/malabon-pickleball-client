@@ -51,7 +51,7 @@ const ProfilePage: React.FC = observer(() => {
   const { displayName, email, photoURL, coverPhoto, bio } = userStore.profile;
 
   return (
-    <div className="bg-gray-50 dark:bg-black min-h-screen transition-colors duration-200">
+    <div className="bg-gray-50 dark:bg-dark-bg min-h-screen transition-colors duration-200">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Profile Header Section */}
         <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm dark:shadow-md overflow-hidden mb-8 transition-colors duration-200">

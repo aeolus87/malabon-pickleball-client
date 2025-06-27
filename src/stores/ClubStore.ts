@@ -32,97 +32,106 @@ class ClubStore {
     makeAutoObservable(this);
   }
 
-  // Removed isUserInClub getter/method since we'll handle this in the component
+  private setLoadingState = (loading: boolean, error: string | null = null) => {
+    this.loading = loading;
+    this.error = error;
+  };
 
-  async fetchClubs() {
-    this.loading = true;
+  private setClubMembersLoadingState = (loading: boolean, error: string | null = null) => {
+    this.clubMembersLoading = loading;
+    if (error) this.error = error;
+  };
+
+  async fetchClubs(): Promise<boolean> {
+    this.setLoadingState(true);
+
     try {
       const response = await axios.get("/clubs");
+      
       runInAction(() => {
         this.clubs = response.data;
-        this.loading = false;
+        this.setLoadingState(false);
       });
-    } catch (error) {
-      runInAction(() => {
-        this.error = "Failed to fetch clubs";
-        this.loading = false;
-      });
+
+      return true;
+    } catch (error: any) {
+      this.setLoadingState(false, "Failed to fetch clubs");
+      return false;
     }
   }
 
-  async fetchClubsWithMemberCount() {
-    this.loading = true;
+  async fetchClubsWithMemberCount(): Promise<boolean> {
+    this.setLoadingState(true);
+
     try {
       const response = await axios.get("/clubs/with-counts");
+      
       runInAction(() => {
         this.clubs = response.data;
-        this.loading = false;
+        this.setLoadingState(false);
       });
+
       return true;
-    } catch (error) {
-      runInAction(() => {
-        this.error = "Failed to fetch clubs with member counts";
-        this.loading = false;
-      });
+    } catch (error: any) {
+      this.setLoadingState(false, "Failed to fetch clubs with member counts");
       return false;
     }
   }
 
-  async fetchClubById(clubId: string) {
-    this.loading = true;
+  async fetchClubById(clubId: string): Promise<boolean> {
+    this.setLoadingState(true);
+
     try {
       const response = await axios.get(`/clubs/${clubId}`);
+      
       runInAction(() => {
         this.currentClub = response.data;
-        this.loading = false;
+        this.setLoadingState(false);
       });
+
       return true;
-    } catch (error) {
-      runInAction(() => {
-        this.error = "Failed to fetch club details";
-        this.loading = false;
-      });
+    } catch (error: any) {
+      this.setLoadingState(false, "Failed to fetch club details");
       return false;
     }
   }
 
-  async fetchClubMembers(clubId: string) {
-    this.clubMembersLoading = true;
+  async fetchClubMembers(clubId: string): Promise<boolean> {
+    this.setClubMembersLoadingState(true);
+
     try {
       const response = await axios.get(`/clubs/${clubId}/members`);
+      
       runInAction(() => {
         this.clubMembers = response.data;
-        this.clubMembersLoading = false;
+        this.setClubMembersLoadingState(false);
       });
+
       return true;
-    } catch (error) {
-      runInAction(() => {
-        this.error = "Failed to fetch club members";
-        this.clubMembersLoading = false;
-      });
+    } catch (error: any) {
+      this.setClubMembersLoadingState(false, "Failed to fetch club members");
       return false;
     }
   }
 
-  // New method to fetch club with members in a single request
-  async fetchClubWithMembers(clubId: string) {
-    this.loading = true;
-    this.clubMembersLoading = true;
+  async fetchClubWithMembers(clubId: string): Promise<boolean> {
+    this.setLoadingState(true);
+    this.setClubMembersLoadingState(true);
+
     try {
       const response = await axios.get(`/clubs/${clubId}/with-members`);
+      
       runInAction(() => {
         this.currentClub = response.data.club;
         this.clubMembers = response.data.members;
-        this.loading = false;
-        this.clubMembersLoading = false;
+        this.setLoadingState(false);
+        this.setClubMembersLoadingState(false);
       });
+
       return true;
-    } catch (error) {
-      runInAction(() => {
-        this.error = "Failed to fetch club with members";
-        this.loading = false;
-        this.clubMembersLoading = false;
-      });
+    } catch (error: any) {
+      this.setLoadingState(false, "Failed to fetch club with members");
+      this.setClubMembersLoadingState(false);
       return false;
     }
   }
@@ -143,155 +152,101 @@ class ClubStore {
     this.selectedClubs = [...clubIds];
   }
 
-  async submitSelectedClubs() {
-    // Read observable in runInAction to ensure proper reactive context
-    let isUserAuthenticated = false;
-    runInAction(() => {
-      isUserAuthenticated = authStore.isAuthenticated;
-    });
+  async submitSelectedClubs(): Promise<boolean> {
+    if (!authStore.isAuthenticated) return false;
 
-    if (!isUserAuthenticated) return false;
-
-    this.loading = true;
-    this.error = null;
+    this.setLoadingState(true);
 
     try {
-      console.log("Submitting club selections to API:", this.selectedClubs);
-
-      // Update the user's clubs
       const response = await axios.post("/clubs/user-clubs", {
         clubIds: this.selectedClubs,
       });
 
-      console.log("Club selections saved successfully");
-
-      // Update local userClubs from the response instead of making another call
       runInAction(() => {
         if (response.data.clubs && Array.isArray(response.data.clubs)) {
           this.userClubs = response.data.clubs;
         }
-        this.loading = false;
+        this.setLoadingState(false);
       });
 
-      // Update the user's profile completion status
-      let isProfileComplete = false;
-      runInAction(() => {
-        isProfileComplete = !!authStore.user?.isProfileComplete;
-      });
-
-      if (!isProfileComplete) {
+      // Update profile completion if needed
+      if (!authStore.user?.isProfileComplete) {
         await authStore.updateUserProfile({ isProfileComplete: true });
       }
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save club selections:", error);
-      runInAction(() => {
-        this.error = "Failed to save club selections";
-        this.loading = false;
-      });
+      this.setLoadingState(false, "Failed to save club selections");
       return false;
     }
   }
 
-  async joinClub(clubId: string) {
-    // Read observable in runInAction to ensure proper reactive context
-    let isUserAuthenticated = false;
-    runInAction(() => {
-      isUserAuthenticated = authStore.isAuthenticated;
-    });
+  async joinClub(clubId: string): Promise<boolean> {
+    if (!authStore.isAuthenticated) return false;
 
-    if (!isUserAuthenticated) return false;
-
-    runInAction(() => {
-      this.loading = true;
-      this.error = null;
-    });
+    this.setLoadingState(true);
 
     try {
-      await axios.post(`/clubs/${clubId}/join`);
-
-      // Refresh the user's clubs
-      await this.fetchUserClubs();
-
-      // Set loading to false in runInAction
+      const response = await axios.post(`/clubs/${clubId}/join`);
+      
+      // Update local user clubs with the response
       runInAction(() => {
-        this.loading = false;
+        if (response.data.clubs) {
+          this.userClubs = response.data.clubs;
+        }
+        this.setLoadingState(false);
       });
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to join club:", error);
-      runInAction(() => {
-        this.error = "Failed to join club";
-        this.loading = false;
-      });
+      this.setLoadingState(false, "Failed to join club");
       return false;
     }
   }
 
-  async leaveClub(clubId: string) {
-    // Read observable in runInAction to ensure proper reactive context
-    let isUserAuthenticated = false;
-    runInAction(() => {
-      isUserAuthenticated = authStore.isAuthenticated;
-    });
+  async leaveClub(clubId: string): Promise<boolean> {
+    if (!authStore.isAuthenticated) return false;
 
-    if (!isUserAuthenticated) return false;
-
-    runInAction(() => {
-      this.loading = true;
-      this.error = null;
-    });
+    this.setLoadingState(true);
 
     try {
-      await axios.post(`/clubs/${clubId}/leave`);
-
-      // Refresh the user's clubs
-      await this.fetchUserClubs();
-
-      // Set loading to false in runInAction
+      const response = await axios.post(`/clubs/${clubId}/leave`);
+      
+      // Update local user clubs with the response
       runInAction(() => {
-        this.loading = false;
+        if (response.data.clubs) {
+          this.userClubs = response.data.clubs;
+        }
+        this.setLoadingState(false);
       });
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to leave club:", error);
-      runInAction(() => {
-        this.error = "Failed to leave club";
-        this.loading = false;
-      });
+      this.setLoadingState(false, "Failed to leave club");
       return false;
     }
   }
 
-  async fetchUserClubs() {
-    // Read observable in runInAction to ensure proper reactive context
-    let isUserAuthenticated = false;
-    runInAction(() => {
-      isUserAuthenticated = authStore.isAuthenticated;
-    });
+  async fetchUserClubs(): Promise<boolean> {
+    if (!authStore.isAuthenticated) return false;
 
-    if (!isUserAuthenticated) return false;
+    this.setLoadingState(true);
 
-    this.loading = true;
     try {
-      // Use the new optimized endpoint that returns user clubs with details in a single request
       const response = await axios.get("/users/clubs");
-
+      
       runInAction(() => {
         this.userClubs = response.data;
-        this.loading = false;
+        this.setLoadingState(false);
       });
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch user clubs:", error);
-      runInAction(() => {
-        this.error = "Failed to fetch your clubs";
-        this.loading = false;
-      });
+      this.setLoadingState(false, "Failed to fetch your clubs");
       return false;
     }
   }
@@ -300,20 +255,19 @@ class ClubStore {
     this.searchQuery = query;
   }
 
-  getFilteredClubs(showUserClubs: boolean = false) {
-    let filteredClubs = showUserClubs ? [...this.userClubs] : [...this.clubs];
+  getFilteredClubs(showUserClubs: boolean = false): Club[] {
+    const clubList = showUserClubs ? this.userClubs : this.clubs;
 
-    if (this.searchQuery.trim()) {
-      const searchLower = this.searchQuery.toLowerCase();
-      filteredClubs = filteredClubs.filter(
-        (club) =>
-          club.name.toLowerCase().includes(searchLower) ||
-          (club.description &&
-            club.description.toLowerCase().includes(searchLower))
-      );
+    if (!this.searchQuery.trim()) {
+      return clubList;
     }
 
-    return filteredClubs;
+    const searchLower = this.searchQuery.toLowerCase();
+    return clubList.filter(
+      (club) =>
+        club.name.toLowerCase().includes(searchLower) ||
+        (club.description && club.description.toLowerCase().includes(searchLower))
+    );
   }
 }
 

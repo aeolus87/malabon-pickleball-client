@@ -144,82 +144,9 @@ const VenuesPage: React.FC = observer(() => {
     const initializePage = async () => {
       try {
         console.log("Initializing venues page...");
-
-        // Don't check session if it's already checked
-        let authenticated = false;
-        let needsSessionCheck = false;
-
-        // Safely access observables using runInAction
-        runInAction(() => {
-          if (!authStore.sessionChecked) {
-            needsSessionCheck = true;
-          } else if (!authStore.isAuthenticated) {
-            navigate("/login", { replace: true });
-          }
-        });
-
-        // Only perform session check if needed
-        if (needsSessionCheck) {
-          authenticated = await authStore.checkSession();
-          if (!authenticated) {
-            console.log("Not authenticated, redirecting to login");
-            navigate("/login", { replace: true });
-            return;
-          }
-        }
-
-        // Verify user exists in backend with a fresh call - this catches deleted accounts
-        try {
-          const response = await axios.get("/auth/session");
-          if (!response.data?.user?.id) {
-            console.log("User account appears to be deleted, forcing logout");
-            runInAction(() => {
-              authStore.clearAuth(true);
-            });
-            navigate("/login?deleted=true", { replace: true });
-            return;
-          }
-        } catch (error) {
-          console.error("Session verification error:", error);
-          // If we can't verify the session, assume account issues and redirect
-          runInAction(() => {
-            authStore.clearAuth(true);
-          });
-          navigate("/login", { replace: true });
-          return;
-        }
-
-        // Load user profile data if needed
-        let needsProfile = false;
-        runInAction(() => {
-          if (!userStore.profile) {
-            needsProfile = true;
-          }
-        });
-
-        if (needsProfile) {
-          await userStore.loadProfile();
-        }
-
-        // Force a session check to get the latest profile completion status
-        await authStore.checkSession();
-
-        // Check profile completion status
-        let profileComplete = false;
-        runInAction(() => {
-          profileComplete = authStore.isProfileComplete;
-        });
-
-        if (!profileComplete) {
-          console.log(
-            "Profile not complete, redirecting to profile completion"
-          );
-          navigate("/profile/complete", { replace: true });
-          return;
-        }
-
-        // Fetch venues
-        console.log("Fetching venues...");
+        
+        // Since we're wrapped in ProtectedRoute, auth is already verified
+        // Just fetch venues directly
         await venueStore.fetchVenues();
       } catch (error) {
         console.error("Failed to initialize venues page:", error);
@@ -229,7 +156,7 @@ const VenuesPage: React.FC = observer(() => {
     };
 
     initializePage();
-  }, [navigate]);
+  }, []);
 
   const handleAttendClick = useCallback((venueId: string) => {
     setSelectedVenue(venueId);
@@ -261,9 +188,6 @@ const VenuesPage: React.FC = observer(() => {
 
         setTimeout(() => {
           setShowConfirmation(false);
-          // Force a re-render after confirmation is closed
-          setLoading(true);
-          setTimeout(() => setLoading(false), 50);
         }, 2000);
       } else {
         setIsError(true);
@@ -311,9 +235,6 @@ const VenuesPage: React.FC = observer(() => {
         // Close confirmation after 2 seconds
         setTimeout(() => {
           setShowConfirmation(false);
-          // Force a re-render after confirmation is closed
-          setLoading(true);
-          setTimeout(() => setLoading(false), 50);
         }, 2000);
       } else {
         // Handle error

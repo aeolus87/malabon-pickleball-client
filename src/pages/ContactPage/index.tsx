@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import axios from "axios";
 
 // Validation
 const validateEmail = (email: string) => {
@@ -29,6 +28,9 @@ interface FormErrors {
   message?: string;
   form?: string;
 }
+
+// Web3Forms access key
+const WEB3FORMS_ACCESS_KEY = "5635287e-9e77-4cb9-82e4-39753e357bff";
 
 // Component
 const ContactPage: React.FC = () => {
@@ -155,37 +157,72 @@ const ContactPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // Call our backend API
-      await axios.post("/contact", formData);
+      // Prepare form data with better email formatting
+      const formPayload = {
+        access_key: WEB3FORMS_ACCESS_KEY,
+        from_name: "Malabon Pickleballers Contact Form",
+        name: formData.name,
+        email: formData.email,
+        subject: `${formData.subject} Inquiry from ${formData.name}`,
+        botcheck: "",
+        replyto: formData.email,
+        site_name: "Malabon Pickleballers",
+        message: `Dear Admin,
 
-      // Handle success
-      setIsSubmitting(false);
-      setSubmitSuccess(true);
-      setFormData({ name: "", email: "", subject: "", message: "" });
+A new inquiry has been submitted through the Malabon Pickleballers website contact form.
 
-      // Reset success message after 10 seconds
-      setTimeout(() => {
-        setSubmitSuccess(false);
-      }, 10000);
-    } catch (error: any) {
-      setIsSubmitting(false);
+Contact Details:
+---------------
+Name: ${formData.name}
+Email: ${formData.email}
+Subject: ${formData.subject}
 
-      // Handle validation errors from the server
-      if (error.response?.data?.errors) {
-        const serverErrors: FormErrors = {};
-        error.response.data.errors.forEach((err: any) => {
-          serverErrors[err.param as keyof FormErrors] = err.msg;
-        });
-        setErrors(serverErrors);
-      } else {
-        // Handle general error
-        setSubmitError(
-          error.response?.data?.message ||
-            "Failed to send your message. Please try again later."
-        );
+Message Content:
+--------------
+${formData.message}
+
+-------------------
+This is an automated message from the Malabon Pickleballers website contact form.
+Please reply directly to ${formData.email} to respond to this inquiry.`,
+      };
+
+      // Submit to Web3Forms with standard headers
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
+        body: JSON.stringify(formPayload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
+      const data = await response.json();
+
+      if (data.success) {
+        // Handle success
+        setIsSubmitting(false);
+        setSubmitSuccess(true);
+        setFormData({ name: "", email: "", subject: "", message: "" });
+
+        // Reset success message after 10 seconds
+        setTimeout(() => {
+          setSubmitSuccess(false);
+        }, 10000);
+      } else {
+        throw new Error(data.message || "Failed to send message");
+      }
+    } catch (error: any) {
       console.error("Contact form submission error:", error);
+      setIsSubmitting(false);
+      setSubmitError(
+        error.message === "Failed to fetch" 
+          ? "Network error. Please check your internet connection and try again."
+          : error.message || "Failed to send your message. Please try again later."
+      );
     }
   };
 

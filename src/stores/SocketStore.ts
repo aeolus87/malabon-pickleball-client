@@ -2,6 +2,7 @@ import { makeAutoObservable, action, runInAction } from "mobx";
 import { io, Socket } from "socket.io-client";
 import { authStore } from "./AuthStore";
 import { venueStore } from "./VenueStore";
+import { clubStore } from "./ClubStore";
 
 class SocketStore {
   socket: Socket | null = null;
@@ -186,6 +187,34 @@ class SocketStore {
       const { venueId, attendees } = data;
       runInAction(() => {
         venueStore.attendees[venueId] = attendees;
+      });
+    });
+
+    this.socket.on("club:update", (club) => {
+      runInAction(() => {
+        // Update club in the clubs list if it exists
+        const existingClubIndex = clubStore.clubs.findIndex(c => c._id === club._id);
+        if (existingClubIndex !== -1) {
+          clubStore.clubs[existingClubIndex] = { ...clubStore.clubs[existingClubIndex], ...club };
+        }
+        
+        // Refresh user clubs if this affects the current user
+        if (authStore.user) {
+          clubStore.fetchUserClubs();
+        }
+      });
+    });
+
+    this.socket.on("club:delete", (clubId) => {
+      runInAction(() => {
+        // Remove club from clubs list
+        clubStore.clubs = clubStore.clubs.filter(c => c._id !== clubId);
+        
+        // Remove from user's clubs if present
+        clubStore.userClubs = clubStore.userClubs.filter(c => c._id !== clubId);
+        
+        // Remove from selected clubs if present
+        clubStore.selectedClubs = clubStore.selectedClubs.filter(id => id !== clubId);
       });
     });
   }

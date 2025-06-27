@@ -6,6 +6,12 @@ import path from "path";
 export default defineConfig(({ command, mode }) => {
   // Load environment variables based on mode (development, production)
   const env = loadEnv(mode, process.cwd(), "");
+  
+  // Environment configuration
+  const isDevelopment = mode === "development";
+  
+  console.log(`🚀 Building in ${mode} mode`);
+  console.log(`🔧 Development mode: ${isDevelopment}`);
 
   return {
     plugins: [react()],
@@ -16,6 +22,7 @@ export default defineConfig(({ command, mode }) => {
     },
     server: {
       port: 5173,
+      host: true, // Allow external connections
       proxy: {
         "/api": {
           target: env.VITE_API_URL || "http://localhost:5000",
@@ -26,32 +33,33 @@ export default defineConfig(({ command, mode }) => {
     },
     build: {
       outDir: "dist",
-      sourcemap: mode === "development",
+      sourcemap: isDevelopment,
       // Minify production builds only
-      minify: mode === "production" ? "esbuild" : false,
+      minify: isDevelopment ? false : "esbuild",
       // Add cache busting for production
       rollupOptions: {
         output: {
           manualChunks: {
             vendor: ["react", "react-dom", "react-router-dom"],
           },
-          entryFileNames:
-            mode === "production"
-              ? "assets/[name].[hash].js"
-              : "assets/[name].js",
-          chunkFileNames:
-            mode === "production"
-              ? "assets/[name].[hash].js"
-              : "assets/[name].js",
-          assetFileNames:
-            mode === "production"
-              ? "assets/[name].[hash].[ext]"
-              : "assets/[name].[ext]",
+          entryFileNames: isDevelopment
+            ? "assets/[name].js"
+            : "assets/[name].[hash].js",
+          chunkFileNames: isDevelopment
+            ? "assets/[name].js"
+            : "assets/[name].[hash].js",
+          assetFileNames: isDevelopment
+            ? "assets/[name].[ext]"
+            : "assets/[name].[hash].[ext]",
         },
       },
     },
+    // Define global constants
+    define: {
+      __DEV__: isDevelopment,
+      __PROD__: !isDevelopment,
+    },
     // Add support for Vercel deployment
-    // This will generate a vercel.json file during build
     optimizeDeps: {
       include: ["react", "react-dom", "react-router-dom"],
     },

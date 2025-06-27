@@ -3,13 +3,18 @@
   "version": "1.0.0",
   "description": "Frontend for venue management system",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --mode development",
     "dev:prod": "vite --mode production",
+    "start": "vite --mode production",
     "build": "tsc && vite build",
     "build:dev": "tsc && vite build --mode development",
     "build:prod": "tsc && vite build --mode production",
     "preview": "vite preview",
-    "test": "jest"
+    "preview:prod": "vite preview --mode production",
+    "test": "jest",
+    "clean": "rm -rf dist",
+    "clean:win": "rmdir /s dist",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@types/lodash.debounce": "^4.0.9",
@@ -26,7 +31,7 @@
     "react-icons": "^5.5.0",
     "react-lazy-load-image-component": "^1.6.3",
     "react-router-dom": "^6.10.0",
-    "socket.io-client": "^4.6.1"
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@babel/plugin-proposal-decorators": "^7.25.9",

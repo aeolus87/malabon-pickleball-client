@@ -38,15 +38,12 @@ const EditProfile: React.FC<EditProfileProps> = observer(
     const profileInputRef = useRef<HTMLInputElement>(null);
     const coverInputRef = useRef<HTMLInputElement>(null);
 
-    // Explicitly access observables in the render function to prevent MobX warnings
     const user = authStore.user;
     const photoURL = user?.photoURL;
     const userCoverPhoto = user?.coverPhoto;
     const userDisplayName = user?.displayName || "User";
 
-    // Use reaction to properly sync with MobX state changes
     useEffect(() => {
-      // This reaction will run once immediately and then whenever user changes
       const disposer = reaction(
         () => ({
           displayName: authStore.user?.displayName || "",
@@ -59,14 +56,11 @@ const EditProfile: React.FC<EditProfileProps> = observer(
         { fireImmediately: true }
       );
 
-      // Clean up the reaction when component unmounts
       return () => disposer();
     }, []);
 
-    // Send updates to parent component when form values change
     useEffect(() => {
       if (onUpdate) {
-        // Create preview URLs for local files
         const previewPhotoURL = profilePicture
           ? URL.createObjectURL(profilePicture)
           : null;
@@ -84,7 +78,6 @@ const EditProfile: React.FC<EditProfileProps> = observer(
           previewCoverURL,
         });
 
-        // Clean up created object URLs when component unmounts
         return () => {
           if (previewPhotoURL) URL.revokeObjectURL(previewPhotoURL);
           if (previewCoverURL) URL.revokeObjectURL(previewCoverURL);
@@ -137,7 +130,6 @@ const EditProfile: React.FC<EditProfileProps> = observer(
           setProfilePicture(file);
           setShowProfileCropper(false);
 
-          // Clean up temp URL
           if (tempProfilePicture) {
             URL.revokeObjectURL(tempProfilePicture);
             setTempProfilePicture(null);
@@ -155,7 +147,6 @@ const EditProfile: React.FC<EditProfileProps> = observer(
           setCoverPhoto(file);
           setShowCoverCropper(false);
 
-          // Clean up temp URL
           if (tempCoverPhoto) {
             URL.revokeObjectURL(tempCoverPhoto);
             setTempCoverPhoto(null);
@@ -184,7 +175,6 @@ const EditProfile: React.FC<EditProfileProps> = observer(
       const formData = new FormData();
       formData.append("file", file);
 
-      // Get Cloudinary credentials from env vars
       const CLOUDINARY_UPLOAD_PRESET = import.meta.env
         .VITE_CLOUDINARY_UPLOAD_PRESET;
       const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
@@ -229,11 +219,9 @@ const EditProfile: React.FC<EditProfileProps> = observer(
           bio,
         };
 
-        // Apply optimistic updates to userStore immediately
         if (userStore.profile) {
           runInAction(() => {
             if (userStore.profile) {
-              // Update the local profile data optimistically
               userStore.profile = {
                 ...userStore.profile,
                 displayName,
@@ -256,22 +244,18 @@ const EditProfile: React.FC<EditProfileProps> = observer(
         const success = await authStore.updateUserProfile(updates);
 
         if (success) {
-          // Update userStore to ensure profile changes are reflected fully
           await userStore.loadProfile();
 
-          // Close the modal - the parent component will handle refreshing the UI
           onClose();
         } else {
           setError("Failed to update profile");
 
-          // Revert optimistic update on failure
           await userStore.loadProfile();
         }
       } catch (error) {
         console.error("Failed to update profile:", error);
         setError("An error occurred while updating your profile");
 
-        // Revert optimistic update on error
         await userStore.loadProfile();
       } finally {
         setLoading(false);
@@ -281,8 +265,8 @@ const EditProfile: React.FC<EditProfileProps> = observer(
     if (!open) return null;
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 transition-colors duration-200">
-        <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-xl w-full max-w-md overflow-hidden shadow-lg dark:shadow-xl transition-colors duration-200">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50 dark:bg-black dark:bg-opacity-70 transition-colors duration-200">
+        <div className="bg-white dark:bg-dark-bg text-gray-900 dark:text-gray-100 rounded-xl w-full max-w-md overflow-hidden shadow-lg dark:shadow-xl transition-colors duration-200">
           {/* Header */}
           <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
             <h2 className="text-xl font-bold">Edit profile</h2>
@@ -355,7 +339,6 @@ const EditProfile: React.FC<EditProfileProps> = observer(
                 </div>
               </div>
 
-              {/* Cover Photo Section */}
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold">Cover photo</h3>
@@ -401,7 +384,6 @@ const EditProfile: React.FC<EditProfileProps> = observer(
                 </div>
               </div>
 
-              {/* Display Name Section */}
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold">Display Name</h3>
@@ -416,7 +398,6 @@ const EditProfile: React.FC<EditProfileProps> = observer(
                 />
               </div>
 
-              {/* Bio Section */}
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold">Bio</h3>
@@ -431,7 +412,6 @@ const EditProfile: React.FC<EditProfileProps> = observer(
                 />
               </div>
 
-              {/* Error message */}
               {error && (
                 <div className="p-3 bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 rounded-lg text-red-600 dark:text-red-200 mb-4 transition-colors duration-200">
                   {error}
@@ -440,7 +420,6 @@ const EditProfile: React.FC<EditProfileProps> = observer(
             </div>
           </div>
 
-          {/* Footer with buttons */}
           <div className="flex justify-end space-x-4 p-4 border-t border-gray-200 dark:border-gray-700 transition-colors duration-200">
             <button
               onClick={onClose}
@@ -485,7 +464,6 @@ const EditProfile: React.FC<EditProfileProps> = observer(
           </div>
         </div>
 
-        {/* Profile Picture Cropper Modal */}
         {showProfileCropper && tempProfilePicture && (
           <ImageCropper
             imageSrc={tempProfilePicture}
