@@ -3,9 +3,6 @@ import axios from "axios";
 import { authStore } from "./AuthStore";
 import { Club } from "./ClubStore";
 
-// Import User type from AuthStore
-import { User } from "./AuthStore";
-
 export interface UserProfile {
   id: string;
   email: string;
@@ -69,7 +66,7 @@ class UserStore {
 
     try {
       const response = await axios.get("/users/profile");
-      
+
       runInAction(() => {
         this.profile = {
           id: response.data.id,

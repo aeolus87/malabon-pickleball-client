@@ -24,11 +24,11 @@ const ClubDetailPage: React.FC = observer(() => {
     const loadData = async () => {
       if (!clubId) return;
 
-      // Load club details and members in a single request
-      await clubStore.fetchClubWithMembers(clubId);
-
-      // Load user clubs to check if user is a member
-      await clubStore.fetchUserClubs();
+      // Load both datasets in parallel to prevent flickering
+      await Promise.all([
+        clubStore.fetchClubWithMembers(clubId),
+        clubStore.fetchUserClubs()
+      ]);
     };
 
     loadData();
@@ -44,11 +44,11 @@ const ClubDetailPage: React.FC = observer(() => {
     try {
       await clubStore.joinClub(clubId);
 
-      // Refresh club details and members in a single request
-      await clubStore.fetchClubWithMembers(clubId);
-
-      // Refresh user clubs
-      await clubStore.fetchUserClubs();
+      // Refresh both datasets in parallel to prevent flickering
+      await Promise.all([
+        clubStore.fetchClubWithMembers(clubId),
+        clubStore.fetchUserClubs()
+      ]);
     } finally {
       setIsJoining(false);
     }
@@ -61,11 +61,11 @@ const ClubDetailPage: React.FC = observer(() => {
     try {
       await clubStore.leaveClub(clubId);
 
-      // Refresh club details and members in a single request
-      await clubStore.fetchClubWithMembers(clubId);
-
-      // Refresh user clubs
-      await clubStore.fetchUserClubs();
+      // Refresh both datasets in parallel to prevent flickering
+      await Promise.all([
+        clubStore.fetchClubWithMembers(clubId),
+        clubStore.fetchUserClubs()
+      ]);
     } finally {
       setIsLeaving(false);
     }

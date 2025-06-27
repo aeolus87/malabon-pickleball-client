@@ -1,11 +1,6 @@
 import React, { useEffect, useState, useCallback, memo } from "react";
 import { observer } from "mobx-react-lite";
-import { authStore } from "../../stores/AuthStore";
-import { userStore } from "../../stores/UserStore";
 import { venueStore, Venue } from "../../stores/VenueStore";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { runInAction } from "mobx";
 import OptimizedImage from "../../components/OptimizedImage";
 
 // Define interface for VenueCard props
@@ -131,7 +126,6 @@ const VenuesPage: React.FC = observer(() => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState("");
   const [isError, setIsError] = useState(false);
-  const navigate = useNavigate();
 
   // Explicitly read observables in the render function
   // This ensures MobX tracks these values properly
@@ -144,7 +138,7 @@ const VenuesPage: React.FC = observer(() => {
     const initializePage = async () => {
       try {
         console.log("Initializing venues page...");
-        
+
         // Since we're wrapped in ProtectedRoute, auth is already verified
         // Just fetch venues directly
         await venueStore.fetchVenues();

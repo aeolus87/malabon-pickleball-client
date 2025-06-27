@@ -38,7 +38,7 @@ const ProfilePage: React.FC = observer(() => {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-black">
         <div className="text-center p-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 dark:border-green-400 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 dark:border-green-500 mx-auto"></div>
           <p className="mt-4 text-gray-600 dark:text-gray-300">
             Loading your profile...
           </p>
@@ -104,7 +104,7 @@ const ProfilePage: React.FC = observer(() => {
                 >
                   About
                   {activeTab === "profile" && (
-                    <span className="absolute bottom-0 left-0 w-full h-1 bg-gray-800 dark:bg-green-500"></span>
+                    <span className="absolute bottom-0 left-0 w-full h-1 bg-gray-800 dark:bg-green-600"></span>
                   )}
                 </button>
                 <button
@@ -117,7 +117,7 @@ const ProfilePage: React.FC = observer(() => {
                 >
                   Clubs
                   {activeTab === "clubs" && (
-                    <span className="absolute bottom-0 left-0 w-full h-1 bg-gray-800 dark:bg-green-500"></span>
+                    <span className="absolute bottom-0 left-0 w-full h-1 bg-gray-800 dark:bg-green-600"></span>
                   )}
                 </button>
               </div>
@@ -125,7 +125,7 @@ const ProfilePage: React.FC = observer(() => {
               {/* Edit Profile Button now in the tabs row */}
               <button
                 onClick={() => setIsEditProfileOpen(true)}
-                className="flex items-center bg-green-500 hover:bg-green-600 text-white border border-green-600 rounded-lg py-1.5 px-3 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 transition-colors duration-200"
+                className="flex items-center bg-green-600 hover:bg-green-700 text-white border border-green-600 rounded-lg py-1.5 px-3 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 dark:focus:ring-offset-gray-800 transition-colors duration-200"
                 aria-label="Edit Profile"
               >
                 <svg
@@ -176,7 +176,7 @@ const ProfilePage: React.FC = observer(() => {
               </h2>
               <Link
                 to="/clubs?tab=all"
-                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200 dark:text-green-300 dark:bg-green-900/50 dark:hover:bg-green-900/70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 transition-colors duration-200"
+                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200 dark:text-green-300 dark:bg-green-900/50 dark:hover:bg-green-900/70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 dark:focus:ring-offset-gray-800 transition-colors duration-200"
               >
                 Manage Clubs
               </Link>
@@ -211,7 +211,7 @@ const ProfilePage: React.FC = observer(() => {
                   <div className="mt-6">
                     <Link
                       to="/clubs?tab=all"
-                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 transition-colors duration-200"
+                      className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 transition-colors duration-200"
                     >
                       Select Clubs
                     </Link>
@@ -233,7 +233,7 @@ const ProfilePage: React.FC = observer(() => {
                               className="w-16 h-16 rounded-full object-cover mr-4 border-2 border-gray-200 dark:border-gray-600"
                             />
                           ) : (
-                            <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-4 text-green-500 dark:text-green-300 font-bold text-xl">
+                            <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-4 text-green-600 dark:text-green-400 font-bold text-xl">
                               {club.name.substring(0, 2).toUpperCase()}
                             </div>
                           )}
@@ -269,7 +269,7 @@ const ProfilePage: React.FC = observer(() => {
                           </div>
                           <Link
                             to={`/clubs/${club._id}`}
-                            className="inline-flex items-center text-sm font-medium text-green-600 hover:text-green-500 dark:text-green-400 dark:hover:text-green-300 transition-colors duration-200"
+                            className="inline-flex items-center text-sm font-medium text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 transition-colors duration-200"
                           >
                             View Club
                             <svg

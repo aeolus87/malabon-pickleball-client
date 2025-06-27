@@ -24,30 +24,19 @@ const ClubsPage: React.FC = observer(() => {
   // Fetch clubs data when component mounts
   useEffect(() => {
     const fetchData = async () => {
-      // First fetch all clubs with member counts
-      await clubStore.fetchClubsWithMemberCount();
-
-      // Then fetch user clubs (which now also gets counts)
-      await clubStore.fetchUserClubs();
+      // Fetch both types of data in parallel to prevent sequential loading flickers
+      await Promise.all([
+        clubStore.fetchClubsWithMemberCount(),
+        clubStore.fetchUserClubs()
+      ]);
     };
     fetchData();
-
-    // Set up a refresh when tabs are changed
-    return () => {
-      // Clean up if needed
-    };
   }, []);
 
   // Add a tab change handler to refresh data when switching tabs
   const handleTabChange = async (tab: "my-clubs" | "all-clubs") => {
     setActiveTab(tab);
-
-    // Refresh the appropriate data when tab changes
-    if (tab === "my-clubs") {
-      await clubStore.fetchUserClubs();
-    } else {
-      await clubStore.fetchClubsWithMemberCount();
-    }
+    // No need to re-fetch data on tab change since we have both datasets
   };
 
   // Handle search input change
@@ -102,9 +91,11 @@ const ClubsPage: React.FC = observer(() => {
 
     await clubStore.joinClub(clubId);
 
-    // Refresh all data after joining
-    await clubStore.fetchClubsWithMemberCount();
-    await clubStore.fetchUserClubs();
+    // Refresh both datasets in parallel to prevent flickering
+    await Promise.all([
+      clubStore.fetchClubsWithMemberCount(),
+      clubStore.fetchUserClubs()
+    ]);
   };
 
   const handleLeaveClub = async (clubId: string) => {
@@ -117,9 +108,11 @@ const ClubsPage: React.FC = observer(() => {
 
     await clubStore.leaveClub(clubId);
 
-    // Refresh all data after leaving
-    await clubStore.fetchClubsWithMemberCount();
-    await clubStore.fetchUserClubs();
+    // Refresh both datasets in parallel to prevent flickering
+    await Promise.all([
+      clubStore.fetchClubsWithMemberCount(),
+      clubStore.fetchUserClubs()
+    ]);
   };
 
   return (

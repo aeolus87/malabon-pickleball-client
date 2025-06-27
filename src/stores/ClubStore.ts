@@ -189,7 +189,7 @@ class ClubStore {
 
     try {
       const response = await axios.post(`/clubs/${clubId}/join`);
-      
+
       // Update local user clubs with the response
       runInAction(() => {
         if (response.data.clubs) {
@@ -213,7 +213,7 @@ class ClubStore {
 
     try {
       const response = await axios.post(`/clubs/${clubId}/leave`);
-      
+
       // Update local user clubs with the response
       runInAction(() => {
         if (response.data.clubs) {
@@ -237,7 +237,7 @@ class ClubStore {
 
     try {
       const response = await axios.get("/users/clubs");
-      
+
       runInAction(() => {
         this.userClubs = response.data;
         this.setLoadingState(false);
@@ -262,12 +262,12 @@ class ClubStore {
       return clubList;
     }
 
-    const searchLower = this.searchQuery.toLowerCase();
+      const searchLower = this.searchQuery.toLowerCase();
     return clubList.filter(
-      (club) =>
-        club.name.toLowerCase().includes(searchLower) ||
+        (club) =>
+          club.name.toLowerCase().includes(searchLower) ||
         (club.description && club.description.toLowerCase().includes(searchLower))
-    );
+      );
   }
 }
 

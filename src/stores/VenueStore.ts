@@ -41,23 +41,23 @@ class VenueStore {
   }
 
   private processAttendee = (attendee: any): Attendee => ({
-    id: attendee._id || attendee.id,
-    displayName: attendee.displayName || "Anonymous",
-    photoURL: attendee.photoURL,
-    email: attendee.email,
+              id: attendee._id || attendee.id,
+              displayName: attendee.displayName || "Anonymous",
+              photoURL: attendee.photoURL,
+              email: attendee.email,
   });
 
   private processVenue = (venue: any): Venue => ({
-    id: venue._id,
-    name: venue.name,
-    status: venue.status,
-    photoURL: venue.photoURL,
+            id: venue._id,
+            name: venue.name,
+            status: venue.status,
+            photoURL: venue.photoURL,
     attendees: venue.attendees?.map(this.processAttendee) || [],
-    createdAt: venue.createdAt,
-    updatedAt: venue.updatedAt,
-    timeRange: venue.timeRange,
-    day: venue.day,
-    cancellationCounts: venue.cancellationCounts || {},
+            createdAt: venue.createdAt,
+            updatedAt: venue.updatedAt,
+            timeRange: venue.timeRange,
+            day: venue.day,
+            cancellationCounts: venue.cancellationCounts || {},
   });
 
   private updateVenueInList = (updatedVenue: any) => {
@@ -97,16 +97,16 @@ class VenueStore {
 
   async attendVenue(venueId: string): Promise<boolean> {
     // Check cancellation limit before API call
-    if (this.hasReachedCancellationLimit(venueId)) {
+      if (this.hasReachedCancellationLimit(venueId)) {
       this.error = "You've cancelled attendance twice. Cannot sign up again.";
-      return false;
-    }
+        return false;
+      }
 
     this.setLoadingState(true);
 
     try {
       const response = await axios.post(`/venues/${venueId}/attend`);
-      
+
       if (response.data.error) {
         this.setLoadingState(false, response.data.error);
         return false;
@@ -129,7 +129,7 @@ class VenueStore {
 
     try {
       const response = await axios.post(`/venues/${venueId}/cancel`);
-      
+
       if (response.data.error) {
         this.setLoadingState(false, response.data.error);
         return false;
@@ -153,7 +153,7 @@ class VenueStore {
 
     const venue = this.venues.find((v) => v.id === venueId);
     return venue?.attendees.some((attendee) => attendee.id === userId) || false;
-  }
+    }
 
   hasReachedCancellationLimit(venueId: string): boolean {
     const userId = this.getCurrentUserId();
@@ -170,7 +170,7 @@ class VenueStore {
 
     try {
       const response = await axios.put(`/venues/${venueId}/status`, { status });
-      
+
       runInAction(() => {
         this.updateVenueInList(response.data);
         this.setLoadingState(false);
@@ -188,7 +188,7 @@ class VenueStore {
 
     try {
       const response = await axios.post("/venues", venueData);
-      
+
       runInAction(() => {
         this.venues.push(this.processVenue(response.data));
         this.setLoadingState(false);
@@ -206,7 +206,7 @@ class VenueStore {
 
     try {
       await axios.delete(`/venues/${venueId}`);
-      
+
       runInAction(() => {
         this.venues = this.venues.filter((v) => v.id !== venueId);
         this.setLoadingState(false);
@@ -241,7 +241,7 @@ class VenueStore {
 
     try {
       const response = await axios.post(`/venues/${venueId}/remove-all-attendees`);
-      
+
       runInAction(() => {
         this.updateVenueInList(response.data);
         this.setLoadingState(false);
@@ -250,6 +250,21 @@ class VenueStore {
       return true;
     } catch (error: any) {
       this.setLoadingState(false, error.response?.data?.error || "Failed to remove attendees");
+      return false;
+    }
+  }
+
+  async getVenueAttendees(venueId: string): Promise<boolean> {
+    try {
+      const response = await axios.get(`/venues/${venueId}/attendees`);
+      
+      runInAction(() => {
+        this.attendees[venueId] = response.data.map(this.processAttendee);
+      });
+
+      return true;
+    } catch (error: any) {
+      console.error("Error fetching venue attendees:", error);
       return false;
     }
   }

@@ -40,7 +40,7 @@ class AuthStore {
     this.error = error;
   };
 
-  private setAuthData = (token: string, userData: User) => {
+  setAuthData = (token: string, userData: User) => {
     this.token = token;
     this.user = userData;
     this.sessionChecked = true;
@@ -65,10 +65,10 @@ class AuthStore {
     // Add token to requests
     axios.interceptors.request.use((config) => {
       const token = this.token;
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
     });
 
     // Handle auth errors
@@ -138,16 +138,16 @@ class AuthStore {
 
   @action
   async checkSession(): Promise<boolean> {
-    if (this.sessionChecked) {
-      return this.isAuthenticated;
-    }
+      if (this.sessionChecked) {
+        return this.isAuthenticated;
+      }
 
     const token = localStorage.getItem("token");
-    if (!token) {
-      this.clearAuth();
+      if (!token) {
+          this.clearAuth();
       this.sessionChecked = true;
-      return false;
-    }
+        return false;
+      }
 
     try {
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
@@ -155,7 +155,7 @@ class AuthStore {
 
       if (!response.data.user) {
         this.clearAuth(true);
-        this.sessionChecked = true;
+          this.sessionChecked = true;
         return false;
       }
 
@@ -178,7 +178,7 @@ class AuthStore {
         return false;
       }
 
-      this.clearAuth();
+        this.clearAuth();
       this.sessionChecked = true;
       return false;
     }
@@ -227,7 +227,7 @@ class AuthStore {
 
     try {
       const codeVerifier = localStorage.getItem("codeVerifier");
-      
+
       if (!codeVerifier) {
         throw new Error("Code verifier not found. Please try logging in again.");
       }
@@ -335,15 +335,15 @@ class AuthStore {
 
     this.setLoadingState(true);
 
-    try {
-      await axios.post("/auth/logout");
-    } catch (error) {
-      console.log("Logout API call failed, continuing with client logout");
-    }
+        try {
+          await axios.post("/auth/logout");
+        } catch (error) {
+          console.log("Logout API call failed, continuing with client logout");
+      }
 
-    this.clearAuth();
-    socketStore.disconnect();
-    window.location.href = "/login";
+        this.clearAuth();
+      socketStore.disconnect();
+      window.location.href = "/login";
   }
 
   get isAuthenticated() {

@@ -25,7 +25,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(({
 
     // Only check auth if not already checked to prevent double checks
     if (!authStore.sessionChecked) {
-      checkAuth();
+    checkAuth();
     } else {
       setIsLoading(false);
     }
