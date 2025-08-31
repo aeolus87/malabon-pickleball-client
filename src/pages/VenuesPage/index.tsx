@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, memo } from "react";
 import { observer } from "mobx-react-lite";
 import { venueStore, Venue } from "../../stores/VenueStore";
 import OptimizedImage from "../../components/OptimizedImage";
+import VenueMap from "../../components/VenueMap";
 
 // Define interface for VenueCard props
 interface VenueCardProps {
@@ -22,19 +23,22 @@ const VenueCard = memo(
     hasReachedCancellationLimit,
   }: VenueCardProps) => {
     const isFull = venue.attendees.length >= 20;
+    const [showMap, setShowMap] = useState(false);
 
     return (
-      <div className="bg-white dark:bg-dark-card rounded-lg shadow-md overflow-hidden dark:border dark:border-dark-border">
-        <div className="relative h-48 w-full">
+      <div className="bg-white dark:bg-dark-card rounded-lg shadow-md overflow-hidden dark:border dark:border-dark-border flex flex-col h-full">
+        {/* Image Section - Fixed Height */}
+        <div className="relative h-48 w-full flex-shrink-0">
           <OptimizedImage
             src={venue.photoURL || ""}
             alt={venue.name}
-            className="w-full h-full"
+            className="w-full h-full object-cover"
             fallbackText={venue.name}
           />
+          {/* Status Badge - Top Right */}
           <div className="absolute top-2 right-2">
             <span
-              className={`px-3 py-1 rounded-full text-sm ${
+              className={`px-3 py-1 rounded-full text-sm font-medium ${
                 venue.status === "Available"
                   ? "bg-brand-500 text-white dark:bg-brand-600"
                   : "bg-gray-400 text-white dark:bg-gray-600"
@@ -43,14 +47,33 @@ const VenueCard = memo(
               {venue.status}
             </span>
           </div>
-        </div>
-        <div className="p-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            {venue.name}
-          </h2>
 
-          <div className="mt-4">
-            <p className="text-gray-700 dark:text-gray-300">
+        </div>
+
+        {/* Content Section - Flexible Height */}
+        <div className="p-4 flex flex-col flex-grow">
+          {/* Header with Venue Name and Map Button */}
+          <div className="flex justify-between items-start mb-3">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex-1 pr-2">
+              {venue.name}
+            </h2>
+            {venue.latitude && venue.longitude && (
+              <button
+                onClick={() => setShowMap(true)}
+                className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors flex-shrink-0"
+                title="📍 View venue location on map"
+              >
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+                <span className="hidden sm:inline">Map</span>
+              </button>
+            )}
+          </div>
+
+          {/* Attendees Count */}
+          <div className="mb-3">
+            <p className="text-gray-700 dark:text-gray-300 text-sm">
               <span
                 className={`${
                   isFull
@@ -65,20 +88,22 @@ const VenueCard = memo(
                 / 20 attendees
               </span>
               {isFull && !isUserAttending && (
-                <span className="ml-2 text-red-600 dark:text-red-400 text-sm">
+                <span className="ml-2 text-red-600 dark:text-red-400 text-xs">
                   (Full)
                 </span>
               )}
             </p>
           </div>
 
+          {/* Cancellation Warning */}
           {hasReachedCancellationLimit && !isUserAttending && (
-            <div className="mt-3 p-2 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-sm rounded">
+            <div className="mb-3 p-2 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-xs rounded">
               You've cancelled twice for this venue. You can no longer sign up.
             </div>
           )}
 
-          <div className="mt-6 flex justify-end">
+          {/* Action Button - Pushed to Bottom */}
+          <div className="mt-auto pt-3">
             {isUserAttending ? (
               <button
                 onClick={() => onCancelClick(venue.id)}
@@ -113,6 +138,17 @@ const VenueCard = memo(
             )}
           </div>
         </div>
+        
+        {/* Map Modal */}
+        {venue.latitude && venue.longitude && (
+          <VenueMap
+            latitude={venue.latitude}
+            longitude={venue.longitude}
+            venueName={venue.name}
+            isOpen={showMap}
+            onClose={() => setShowMap(false)}
+          />
+        )}
       </div>
     );
   }
@@ -278,21 +314,29 @@ const VenuesPage: React.FC = observer(() => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 dark:bg-dark-bg transition-colors duration-300">
-      <div className="flex justify-center items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 dark:bg-dark-bg transition-colors duration-300">
+      <div className="flex justify-center items-center mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
           Available Venues
         </h1>
       </div>
 
       {venues.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400">
-            No venues available at the moment.
-          </p>
+        <div className="text-center py-8 sm:py-12">
+          <div className="max-w-md mx-auto">
+            <svg className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+              No venues available
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400">
+              Check back later for new venues or contact an admin to add venues.
+            </p>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {venues.map((venue) => {
             const userIsAttending = venueStore.isUserAttending(venue.id);
             const reachedCancellationLimit =
@@ -349,7 +393,6 @@ const VenuesPage: React.FC = observer(() => {
             </h2>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
               Are you sure you want to cancel your attendance for this venue?
-              You may only cancel your attendance up to 2 times per venue.
             </p>
             <div className="flex justify-end space-x-4">
               <button

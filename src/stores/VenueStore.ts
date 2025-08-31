@@ -21,6 +21,8 @@ export interface Venue {
   timeRange?: string;
   day?: string;
   cancellationCounts?: Record<string, number>; // Track user cancellations
+  latitude?: number;
+  longitude?: number;
 }
 
 class VenueStore {
@@ -58,6 +60,8 @@ class VenueStore {
             timeRange: venue.timeRange,
             day: venue.day,
             cancellationCounts: venue.cancellationCounts || {},
+            latitude: venue.latitude,
+            longitude: venue.longitude,
   });
 
   private updateVenueInList = (updatedVenue: any) => {
@@ -183,7 +187,7 @@ class VenueStore {
     }
   }
 
-  async createVenue(venueData: { name: string; status: string; photoURL?: string }): Promise<boolean> {
+  async createVenue(venueData: { name: string; status: string; photoURL?: string; latitude?: number; longitude?: number }): Promise<boolean> {
     this.setLoadingState(true);
 
     try {

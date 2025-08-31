@@ -16,6 +16,8 @@ const AdminPage: React.FC = observer(() => {
   const [newVenueName, setNewVenueName] = useState("");
   const [newVenueStatus, setNewVenueStatus] = useState("Available");
   const [newVenueImage, setNewVenueImage] = useState<File | null>(null);
+  const [newVenueLatitude, setNewVenueLatitude] = useState("");
+  const [newVenueLongitude, setNewVenueLongitude] = useState("");
   const [loading, setLoading] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmInput, setConfirmInput] = useState("");
@@ -216,6 +218,8 @@ const AdminPage: React.FC = observer(() => {
         name: newVenueName,
         status: newVenueStatus,
         photoURL,
+        latitude: newVenueLatitude ? parseFloat(newVenueLatitude) : undefined,
+        longitude: newVenueLongitude ? parseFloat(newVenueLongitude) : undefined,
       };
 
       const success = await venueStore.createVenue(venueData);
@@ -228,6 +232,8 @@ const AdminPage: React.FC = observer(() => {
       setNewVenueName("");
       setNewVenueStatus("Available");
       setNewVenueImage(null);
+      setNewVenueLatitude("");
+      setNewVenueLongitude("");
       setImagePreview(null);
       if (newVenueImageInputRef.current) {
         newVenueImageInputRef.current.value = "";
@@ -446,6 +452,43 @@ const AdminPage: React.FC = observer(() => {
                       onChange={handleNewVenueImageChange}
                       className="w-full p-3 border border-gray-300 dark:border-gray-800 rounded-md focus:ring-1 focus:ring-gray-500 focus:border-gray-500 transition dark:bg-zinc-800 dark:text-gray-200"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label
+                        htmlFor="venueLatitude"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2"
+                      >
+                        Latitude (Optional)
+                      </label>
+                      <input
+                        type="number"
+                        id="venueLatitude"
+                        placeholder="e.g., 14.5995"
+                        step="any"
+                        value={newVenueLatitude}
+                        onChange={(e) => setNewVenueLatitude(e.target.value)}
+                        className="w-full p-3 border border-gray-300 dark:border-gray-800 rounded-md focus:ring-2 focus:ring-brand-500 dark:focus:ring-brand-400 focus:border-transparent transition-all duration-200 dark:bg-zinc-800 dark:text-gray-100 dark:placeholder-gray-400"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="venueLongitude"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2"
+                      >
+                        Longitude (Optional)
+                      </label>
+                      <input
+                        type="number"
+                        id="venueLongitude"
+                        placeholder="e.g., 120.9842"
+                        step="any"
+                        value={newVenueLongitude}
+                        onChange={(e) => setNewVenueLongitude(e.target.value)}
+                        className="w-full p-3 border border-gray-300 dark:border-gray-800 rounded-md focus:ring-2 focus:ring-brand-500 dark:focus:ring-brand-400 focus:border-transparent transition-all duration-200 dark:bg-zinc-800 dark:text-gray-100 dark:placeholder-gray-400"
+                      />
+                    </div>
                   </div>
                 </div>
 

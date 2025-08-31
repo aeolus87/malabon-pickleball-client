@@ -166,7 +166,7 @@ const ContactPage: React.FC = () => {
         subject: `${formData.subject} Inquiry from ${formData.name}`,
         botcheck: "",
         replyto: formData.email,
-        site_name: "Malabon Pickleballers",
+        website: "Malabon Pickleballers",
         message: `Dear Admin,
 
 A new inquiry has been submitted through the Malabon Pickleballers website contact form.
