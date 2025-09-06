@@ -8,6 +8,9 @@ import axios from "axios";
 import OptimizedImage from "../../components/OptimizedImage";
 import Avatar from "../../components/Avatar";
 
+// Temporary feature flag: hide manual location inputs
+const SHOW_LOCATION_FIELDS = false;
+
 const AdminPage: React.FC = observer(() => {
   // Add explicit access to MobX observables in component body for proper tracking
   const isAdmin = authStore.isAdmin;
@@ -181,36 +184,23 @@ const AdminPage: React.FC = observer(() => {
 
       let photoURL: string | undefined;
 
-      // Upload image to Cloudinary if provided
+      // Upload image to Cloudinary (signed) if provided
       if (newVenueImage) {
-        const CLOUDINARY_UPLOAD_PRESET = import.meta.env
-          .VITE_CLOUDINARY_UPLOAD_PRESET;
-        const CLOUDINARY_CLOUD_NAME = import.meta.env
-          .VITE_CLOUDINARY_CLOUD_NAME;
-
-        if (!CLOUDINARY_UPLOAD_PRESET || !CLOUDINARY_CLOUD_NAME) {
-          throw new Error("Cloudinary credentials not found");
-        }
+        const signRes = await axios.post("/uploads/sign", { folder: "venue_images" });
+        const { timestamp, signature, api_key, cloud_name, folder } = signRes.data;
 
         const formData = new FormData();
         formData.append("file", newVenueImage);
-        formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-        formData.append("folder", "venue_images");
+        formData.append("api_key", api_key);
+        formData.append("timestamp", String(timestamp));
+        formData.append("signature", signature);
+        if (folder) formData.append("folder", folder);
 
-        const response = await fetch(
-          `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to upload image to Cloudinary");
-        }
-
+        const uploadUrl = `https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`;
+        const response = await fetch(uploadUrl, { method: "POST", body: formData });
+        if (!response.ok) throw new Error("Failed to upload image to Cloudinary");
         const data = await response.json();
-        photoURL = data.secure_url;
+        photoURL = data.secure_url as string;
       }
 
       // Create venue with image URL if uploaded
@@ -258,35 +248,21 @@ const AdminPage: React.FC = observer(() => {
     try {
       setLoading(true);
 
-      // Get Cloudinary credentials
-      const CLOUDINARY_UPLOAD_PRESET = import.meta.env
-        .VITE_CLOUDINARY_UPLOAD_PRESET;
-      const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+      const signRes = await axios.post("/uploads/sign", { folder: "venue_images" });
+      const { timestamp, signature, api_key, cloud_name, folder } = signRes.data;
 
-      if (!CLOUDINARY_UPLOAD_PRESET || !CLOUDINARY_CLOUD_NAME) {
-        throw new Error("Cloudinary credentials not found");
-      }
-
-      // Upload to Cloudinary
       const formData = new FormData();
       formData.append("file", editingVenueImage.file);
-      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-      formData.append("folder", "venue_images");
+      formData.append("api_key", api_key);
+      formData.append("timestamp", String(timestamp));
+      formData.append("signature", signature);
+      if (folder) formData.append("folder", folder);
 
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to upload image to Cloudinary");
-      }
-
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`;
+      const response = await fetch(uploadUrl, { method: "POST", body: formData });
+      if (!response.ok) throw new Error("Failed to upload image to Cloudinary");
       const data = await response.json();
-      const photoURL = data.secure_url;
+      const photoURL = data.secure_url as string;
 
       // Update venue with new image URL
       await axios.put(`/venues/${venueId}/photo`, { photoURL });
@@ -454,6 +430,7 @@ const AdminPage: React.FC = observer(() => {
                     />
                   </div>
 
+                  {SHOW_LOCATION_FIELDS && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label
@@ -490,6 +467,7 @@ const AdminPage: React.FC = observer(() => {
                       />
                     </div>
                   </div>
+                  )}
                 </div>
 
                 <button
@@ -799,7 +777,7 @@ const AdminPage: React.FC = observer(() => {
                       Change Status Confirmation
                     </h3>
                     <div className="mt-2">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-gray-700 dark:text-gray-200">
                         {pendingAction?.currentStatus === "Available"
                           ? "Making this venue unavailable will remove all current attendees. Are you sure you want to continue?"
                           : "Making this venue available will allow users to join it. Are you sure you want to continue?"}
@@ -815,7 +793,7 @@ const AdminPage: React.FC = observer(() => {
                       <input
                         type="text"
                         id="confirm-text"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:focus:ring-yellow-600 dark:bg-dark-input dark:text-gray-200 transition-shadow duration-200"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:focus:ring-yellow-600 dark:bg-dark-input dark:text-gray-800 transition-shadow duration-200"
                         value={confirmInput}
                         onChange={(e) => setConfirmInput(e.target.value)}
                         placeholder="confirm"

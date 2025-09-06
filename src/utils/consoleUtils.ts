@@ -3,6 +3,7 @@
  */
 
 import axios from "axios";
+import { SOCKET_URL } from "../config/env";
 
 /**
  * Displays ASCII art in the console when the app starts
@@ -47,12 +48,8 @@ export const printConsoleWelcome = (): void => {
  */
 export const warmupServer = async (): Promise<void> => {
   try {
-    // Extract the base server URL without the /api path
-    const apiUrl =
-      axios.defaults.baseURL?.toString() || "http://localhost:5000/api";
-    const serverBaseUrl = apiUrl.endsWith("/api")
-      ? apiUrl.slice(0, -4) // Remove "/api" from the end
-      : apiUrl;
+    // Use the configured socket/server origin for warmup
+    const serverBaseUrl = SOCKET_URL;
 
     if (process.env.NODE_ENV !== "production") {
       console.log(`🔌 Attempting to warm up server at ${serverBaseUrl}/warmup`);
@@ -170,11 +167,7 @@ export const warmupServer = async (): Promise<void> => {
     // Error handling code stays the same...
     if (process.env.NODE_ENV !== "production") {
       // Extract the base server URL for logging
-      const apiUrl =
-        axios.defaults.baseURL?.toString() || "http://localhost:5000/api";
-      const serverBaseUrl = apiUrl.endsWith("/api")
-        ? apiUrl.slice(0, -4) // Remove "/api" from the end
-        : apiUrl;
+      const serverBaseUrl = SOCKET_URL;
 
       console.warn(
         "⚠️ Server warmup failed:",

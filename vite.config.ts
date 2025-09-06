@@ -25,9 +25,10 @@ export default defineConfig(({ command, mode }) => {
       host: true, // Allow external connections
       proxy: {
         "/api": {
-          target: env.VITE_API_URL || "http://localhost:5000",
+          // Be tolerant if someone sets VITE_API_URL with /api by mistake
+          target: (env.VITE_API_URL || "http://localhost:5000").replace(/\/?api\/?$/, ""),
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, ""),
+          ws: true,
         },
       },
     },
@@ -54,11 +55,7 @@ export default defineConfig(({ command, mode }) => {
         },
       },
     },
-    // Define global constants
-    define: {
-      __DEV__: isDevelopment,
-      __PROD__: !isDevelopment,
-    },
+    // No extra global defines needed
     // Add support for Vercel deployment
     optimizeDeps: {
       include: ["react", "react-dom", "react-router-dom"],

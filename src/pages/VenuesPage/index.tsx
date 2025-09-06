@@ -3,6 +3,8 @@ import { observer } from "mobx-react-lite";
 import { venueStore, Venue } from "../../stores/VenueStore";
 import OptimizedImage from "../../components/OptimizedImage";
 import VenueMap from "../../components/VenueMap";
+// Temporary feature flag: hide map until ready
+const SHOW_MAP = false;
 
 // Define interface for VenueCard props
 interface VenueCardProps {
@@ -57,7 +59,7 @@ const VenueCard = memo(
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex-1 pr-2">
               {venue.name}
             </h2>
-            {venue.latitude && venue.longitude && (
+            {SHOW_MAP && venue.latitude && venue.longitude && (
               <button
                 onClick={() => setShowMap(true)}
                 className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors flex-shrink-0"
@@ -140,7 +142,7 @@ const VenueCard = memo(
         </div>
         
         {/* Map Modal */}
-        {venue.latitude && venue.longitude && (
+        {SHOW_MAP && venue.latitude && venue.longitude && (
           <VenueMap
             latitude={venue.latitude}
             longitude={venue.longitude}

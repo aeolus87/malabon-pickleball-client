@@ -5,6 +5,7 @@ import { authStore } from "../../stores/AuthStore";
 import Avatar from "../Avatar";
 import { userStore } from "../../stores/UserStore";
 import ImageCropper from "../ImageCropper";
+import axios from "axios";
 
 interface EditProfileProps {
   open: boolean;
@@ -172,41 +173,29 @@ const EditProfile: React.FC<EditProfileProps> = observer(
     };
 
     const uploadImage = async (file: File): Promise<string> => {
+      // Ask backend to sign the upload
+      const signRes = await axios.post("/uploads/sign", {
+        folder: "profile_pictures",
+      });
+
+      const { timestamp, signature, api_key, cloud_name, folder } = signRes.data;
+
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("api_key", api_key);
+      formData.append("timestamp", String(timestamp));
+      formData.append("signature", signature);
+      if (folder) formData.append("folder", folder);
 
-      const CLOUDINARY_UPLOAD_PRESET = import.meta.env
-        .VITE_CLOUDINARY_UPLOAD_PRESET;
-      const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`;
+      const response = await fetch(uploadUrl, { method: "POST", body: formData });
 
-      if (!CLOUDINARY_UPLOAD_PRESET || !CLOUDINARY_CLOUD_NAME) {
-        throw new Error(
-          "Cloudinary credentials not found in environment variables"
-        );
+      if (!response.ok) {
+        throw new Error("Failed to upload image to Cloudinary");
       }
 
-      // Upload to Cloudinary directly
-      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-
-      try {
-        const cloudinaryResponse = await fetch(
-          `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-
-        if (!cloudinaryResponse.ok) {
-          throw new Error("Failed to upload image to Cloudinary");
-        }
-
-        const cloudinaryData = await cloudinaryResponse.json();
-        return cloudinaryData.secure_url;
-      } catch (error) {
-        console.error("Error uploading image:", error);
-        throw error;
-      }
+      const data = await response.json();
+      return data.secure_url as string;
     };
 
     const handleSave = async () => {

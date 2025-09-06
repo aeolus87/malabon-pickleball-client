@@ -20,6 +20,7 @@ const ClubsPage = lazy(() => import("./pages/ClubsPage"));
 const ClubDetailPage = lazy(() => import("./pages/ClubDetailPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const GoogleCallbackPage = lazy(() => import("./pages/GoogleCallback"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const ProfileComplete = lazy(() => import("./pages/ProfileComplete"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const SuperAdminPage = lazy(() => import("./pages/SuperAdminPage"));
@@ -242,6 +243,7 @@ const App: React.FC = observer(() => {
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route
             path="/auth/google/callback"
             element={<GoogleCallbackPage />}

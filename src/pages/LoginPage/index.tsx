@@ -10,6 +10,8 @@ interface LoginPageProps {
 
 const LoginPage = observer(({ deletedAccount }: LoginPageProps = {}) => {
   const [error, setError] = useState<string | null>(null);
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   const [accountDeleted, setAccountDeleted] = useState(false);
@@ -43,6 +45,18 @@ const LoginPage = observer(({ deletedAccount }: LoginPageProps = {}) => {
     } catch (error) {
       console.error("Failed to initiate Google login:", error);
       setError("Failed to connect to Google. Please try again.");
+    }
+  };
+
+  const handlePasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setError(null);
+      const user = await authStore.loginWithPassword(identifier.trim(), password);
+      if (user) navigate("/venues");
+    } catch (err) {
+      console.error(err);
+      setError("Invalid username or password");
     }
   };
 
@@ -97,6 +111,32 @@ const LoginPage = observer(({ deletedAccount }: LoginPageProps = {}) => {
           </div>
         )}
 
+        <form className="space-y-3" onSubmit={handlePasswordLogin}>
+          <input
+            type="text"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            placeholder="Username"
+            className="w-full px-3 py-2 border rounded-md dark:bg-dark-card dark:border-gray-700"
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            className="w-full px-3 py-2 border rounded-md dark:bg-dark-card dark:border-gray-700"
+          />
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-2 rounded-md bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50"
+          >
+            {isLoading ? "Signing in..." : "Sign in"}
+          </button>
+        </form>
+
+        <div className="text-center text-xs text-gray-500 dark:text-gray-400">or</div>
+
         <button
           onClick={handleGoogleLogin}
           disabled={isLoading}
@@ -110,6 +150,10 @@ const LoginPage = observer(({ deletedAccount }: LoginPageProps = {}) => {
 
         <div className="text-center text-xs text-gray-500 dark:text-gray-400 mt-4">
           By signing in, you agree to our Terms of Service and Privacy Policy
+        </div>
+
+        <div className="text-center mt-2 text-sm">
+          <a href="/register" className="text-indigo-600 dark:text-indigo-400 hover:underline">Create an account</a>
         </div>
       </div>
     </div>

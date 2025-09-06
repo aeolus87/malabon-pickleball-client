@@ -6,6 +6,7 @@ import axios from "axios";
 import { configure } from "mobx";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { BrowserRouter } from "react-router-dom";
+import { API_BASE } from "./config/env";
 // Configure MobX
 configure({
   enforceActions: "never",
@@ -15,9 +16,8 @@ configure({
   disableErrorBoundaries: false,
 });
 
-// Configure axios defaults
-axios.defaults.baseURL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000";
+// Configure axios defaults (single base path)
+axios.defaults.baseURL = API_BASE;
 axios.defaults.withCredentials = true;
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(

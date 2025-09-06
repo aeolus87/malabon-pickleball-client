@@ -281,6 +281,38 @@ class AuthStore {
   }
 
   @action
+  async registerLocal(input: { firstName: string; lastName: string; phoneNumber?: string; username: string; password: string; email?: string; }): Promise<User | null> {
+    this.setLoadingState(true);
+    try {
+      const response = await axios.post("/auth/register", input);
+      runInAction(() => {
+        const userData = this.preserveUserPhotos(response.data.user);
+        this.setAuthData(response.data.token, userData);
+      });
+      return this.user;
+    } catch (error: any) {
+      this.setLoadingState(false, error.response?.data?.error || "Registration failed");
+      return null;
+    }
+  }
+
+  @action
+  async loginWithPassword(identifier: string, password: string): Promise<User | null> {
+    this.setLoadingState(true);
+    try {
+      const response = await axios.post("/auth/login", { identifier, password });
+      runInAction(() => {
+        const userData = this.preserveUserPhotos(response.data.user);
+        this.setAuthData(response.data.token, userData);
+      });
+      return this.user;
+    } catch (error: any) {
+      this.setLoadingState(false, error.response?.data?.error || "Invalid credentials");
+      return null;
+    }
+  }
+
+  @action
   async makeUserAdmin(email: string): Promise<boolean> {
     if (!this.isAdmin) {
       this.setLoadingState(false, "Only admins can make other users admin");

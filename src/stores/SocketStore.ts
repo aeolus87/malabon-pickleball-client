@@ -2,6 +2,7 @@ import { makeAutoObservable, action, runInAction } from "mobx";
 import { io, Socket } from "socket.io-client";
 import { authStore } from "./AuthStore";
 import { venueStore } from "./VenueStore";
+import { SOCKET_URL } from "../config/env";
 import { clubStore } from "./ClubStore";
 
 class SocketStore {
@@ -21,9 +22,8 @@ class SocketStore {
     console.log("Socket: Attempting to connect");
     this.connectionAttempted = true;
 
-    // Extract base URL without the /api path
-    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-    const socketUrl = apiUrl.replace("/api", "");
+    // Connect sockets to the configured server origin
+    const socketUrl = SOCKET_URL;
 
     console.log("Socket: Connecting to", socketUrl);
 
