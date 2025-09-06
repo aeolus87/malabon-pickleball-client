@@ -1,9 +1,4 @@
 {
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://malabon-pickleball-api.fly.dev/api/$1" },
-    { "source": "/socket.io/(.*)", "destination": "https://malabon-pickleball-api.fly.dev/socket.io/$1" },
-    { "source": "/warmup", "destination": "https://malabon-pickleball-api.fly.dev/warmup" }
-  ],
   "routes": [
     { "handle": "filesystem" },
     { "src": "/.*", "dest": "/index.html" }
