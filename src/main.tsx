@@ -7,6 +7,7 @@ import { configure } from "mobx";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { BrowserRouter } from "react-router-dom";
 import { API_BASE } from "./config/env";
+import { setupAxiosSecurity } from "./config/axiosSecurity";
 // Configure MobX
 configure({
   enforceActions: "never",
@@ -19,6 +20,7 @@ configure({
 // Configure axios defaults (single base path)
 axios.defaults.baseURL = API_BASE;
 axios.defaults.withCredentials = true;
+setupAxiosSecurity();
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
