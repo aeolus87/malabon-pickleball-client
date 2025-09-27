@@ -3,10 +3,6 @@
 // One flag to branch UI/debug behavior
 export const IS_DEV = import.meta.env.DEV;
 
-// Temporary maintenance mode flag; when true, UI routes are replaced with a maintenance screen
-export const IS_MAINTENANCE_MODE =
-  (import.meta.env as any)?.VITE_MAINTENANCE_MODE === "true";
-
 // Single API base used across the app
 // In dev, Vite proxy should forward "/api" to the backend.
 // In prod, Vercel (or your CDN) should rewrite "/api" to your backend.

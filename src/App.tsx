@@ -8,8 +8,6 @@ import { socketStore } from "./stores/SocketStore";
 import { userStore } from "./stores/UserStore";
 import Navbar from "./components/Navbar";
 import { printConsoleWelcome, warmupServer } from "./utils/consoleUtils";
-import MaintenancePage from "./pages/MaintenancePage";
-import { IS_MAINTENANCE_MODE } from "./config/env";
 import "./index.css";
 
 // Use lazy loading for routes to improve initial page load time
@@ -170,8 +168,6 @@ const LoadingSpinner = () => (
 // App component
 const App: React.FC = observer(() => {
   const location = useLocation();
-  const isMaintenanceMode = IS_MAINTENANCE_MODE;
-
   // Initialize server connection and display welcome message
   useEffect(() => {
     // Print welcome ASCII art to console
@@ -183,11 +179,6 @@ const App: React.FC = observer(() => {
 
   // Combined effect for session checking and socket initialization
   useEffect(() => {
-    if (isMaintenanceMode) {
-      socketStore.disconnect();
-      return;
-    }
-
     // First, check if session needs to be checked
     let needsSessionCheck = false;
 
@@ -242,11 +233,7 @@ const App: React.FC = observer(() => {
       disposer();
       socketStore.disconnect();
     };
-  }, [location.pathname, isMaintenanceMode]);
-
-  if (isMaintenanceMode) {
-    return <MaintenancePage />;
-  }
+  }, [location.pathname]);
 
   return (
     <Navbar>
