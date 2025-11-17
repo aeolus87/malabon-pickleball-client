@@ -54,9 +54,14 @@ const LoginPage = observer(({ deletedAccount }: LoginPageProps = {}) => {
       setError(null);
       const user = await authStore.loginWithPassword(identifier.trim(), password);
       if (user) navigate("/venues");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Invalid username or password");
+      // Check if error is EMAIL_NOT_VERIFIED
+      if (err.code === "EMAIL_NOT_VERIFIED") {
+        setError("Please verify your email before logging in. Check your inbox for the verification code.");
+      } else {
+        setError(err.message || "Invalid username or password");
+      }
     }
   };
 
@@ -99,6 +104,16 @@ const LoginPage = observer(({ deletedAccount }: LoginPageProps = {}) => {
           <div className="rounded-md bg-red-50 dark:bg-red-900/30 p-4 border border-red-200 dark:border-red-800">
             <div className="text-sm text-red-700 dark:text-red-300">
               {error}
+              {error.includes("verify your email") && (
+                <div className="mt-2">
+                  <button
+                    onClick={() => navigate("/verify-email", { state: { email: identifier } })}
+                    className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                  >
+                    Go to verification page →
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

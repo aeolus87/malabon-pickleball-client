@@ -87,13 +87,9 @@ const GoogleCallback: React.FC = () => {
     }
   };
 
-  // Helper function to navigate based on profile completion
+  // Helper function to navigate to venues
   const navigateToAppropriateRoute = () => {
-    if (authStore.isProfileComplete) {
-      navigate("/venues", { replace: true });
-    } else {
-      navigate("/profile/complete", { replace: true });
-    }
+    navigate("/venues", { replace: true });
   };
 
   // Show a clean loading spinner without debug messages

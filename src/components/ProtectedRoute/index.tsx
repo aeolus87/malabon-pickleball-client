@@ -5,12 +5,10 @@ import { authStore } from '../../stores/AuthStore';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  checkProfileComplete?: boolean;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(({ 
-  children, 
-  checkProfileComplete = false 
+  children
 }) => {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(!authStore.sessionChecked);
@@ -35,8 +33,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(({
   console.log('ProtectedRoute - Auth Status:', {
     isAuthenticated: authStore.isAuthenticated,
     user: authStore.user,
-    checkProfileComplete,
-    isProfileComplete: authStore.user?.isProfileComplete
   });
 
   if (isLoading) {
@@ -50,11 +46,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(({
   if (!authStore.isAuthenticated) {
     // Redirect to login if not authenticated
     return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  // Check profile completion if needed
-  if (checkProfileComplete && authStore.user && !authStore.user.isProfileComplete) {
-    return <Navigate to="/profile/complete" state={{ from: location }} replace />;
   }
 
   // Access granted

@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { observer } from "mobx-react-lite";
 import { authStore } from "../../stores/AuthStore";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { containsProfanity, getProfanityErrorMessage } from "../../utils/profanityFilter";
+import { sanitizeFormInput, sanitizeEmail, containsDangerousPatterns } from "../../utils/securityUtils";
 
 const RegisterPage: React.FC = observer(() => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
@@ -13,19 +16,82 @@ const RegisterPage: React.FC = observer(() => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  // Handle redirect message from protected routes
+  useEffect(() => {
+    const state = location.state as { message?: string } | null;
+    if (state?.message) {
+      setError(state.message);
+    }
+  }, [location.state]);
+
+  const validatePhilippinesPhone = (phone: string): boolean => {
+    if (!phone) return true; // Phone is optional
+    const cleaned = phone.replace(/[\s-]/g, '');
+    return /^(\+639|09)\d{9}$/.test(cleaned);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    
+    // Sanitize all inputs
+    const sanitizedFirstName = sanitizeFormInput(firstName, 50);
+    const sanitizedLastName = sanitizeFormInput(lastName, 50);
+    const sanitizedUsername = sanitizeFormInput(username, 50);
+    const sanitizedEmail = sanitizeEmail(email);
+    
+    // Validate profanity
+    if (containsProfanity(sanitizedFirstName) || containsProfanity(sanitizedLastName) || 
+        containsProfanity(sanitizedUsername)) {
+      setError(getProfanityErrorMessage());
+      return;
+    }
+    
+    // Validate dangerous patterns
+    if (containsDangerousPatterns(sanitizedFirstName) || containsDangerousPatterns(sanitizedLastName) ||
+        containsDangerousPatterns(sanitizedUsername)) {
+      setError("Input contains invalid characters");
+      return;
+    }
+    
+    if (!sanitizedEmail || !sanitizedEmail.includes("@")) {
+      setError("Valid email address is required");
+      return;
+    }
+
+    if (phoneNumber && !validatePhilippinesPhone(phoneNumber)) {
+      setError("Phone number must be in Philippines format (+639XXXXXXXXX or 09XXXXXXXXX)");
+      return;
+    }
+
     const user = await authStore.registerLocal({
-      firstName,
-      lastName,
-      phoneNumber,
-      username,
+      firstName: sanitizedFirstName,
+      lastName: sanitizedLastName,
+      phoneNumber: phoneNumber.trim() || undefined,
+      username: sanitizedUsername,
       password,
-      email: email || undefined,
+      email: sanitizedEmail,
     });
-    if (user) navigate("/profile/complete", { replace: true });
-    else setError(authStore.error || "Registration failed");
+    
+    if (user) {
+      if (!user.isVerified) {
+        // Clear form fields
+        setFirstName("");
+        setLastName("");
+        setUsername("");
+        setPhoneNumber("");
+        setPassword("");
+        // Clear auth data since user is not verified
+        authStore.clearAuth();
+        // Redirect to verification page with email
+        navigate("/verify-email", { state: { email }, replace: true });
+      } else {
+        // User is verified (shouldn't happen normally, but handle it)
+        navigate("/venues", { replace: true });
+      }
+    } else {
+      setError(authStore.error || "Registration failed");
+    }
   };
 
   return (
@@ -49,14 +115,16 @@ const RegisterPage: React.FC = observer(() => {
               className="border border-gray-300 dark:border-gray-700 p-2 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-dark-card dark:text-gray-100"
               placeholder="First name"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              onChange={(e) => setFirstName(sanitizeFormInput(e.target.value, 50))}
+              maxLength={50}
               required
             />
             <input
               className="border border-gray-300 dark:border-gray-700 p-2 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-dark-card dark:text-gray-100"
               placeholder="Last name"
               value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              onChange={(e) => setLastName(sanitizeFormInput(e.target.value, 50))}
+              maxLength={50}
               required
             />
           </div>
@@ -66,22 +134,26 @@ const RegisterPage: React.FC = observer(() => {
             placeholder="Phone number"
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
+            type="tel"
           />
 
           <input
             className="w-full border border-gray-300 dark:border-gray-700 p-2 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-dark-card dark:text-gray-100"
             placeholder="Username"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => setUsername(sanitizeFormInput(e.target.value, 50))}
+            maxLength={50}
             required
           />
 
           <input
             className="w-full border border-gray-300 dark:border-gray-700 p-2 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-dark-card dark:text-gray-100"
-            placeholder="Email (optional)"
+            placeholder="Email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setEmail(sanitizeEmail(e.target.value))}
             type="email"
+            maxLength={100}
+            required
           />
 
           <input

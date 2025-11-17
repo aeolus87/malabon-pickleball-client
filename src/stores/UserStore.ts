@@ -10,7 +10,6 @@ export interface UserProfile {
   photoURL: string | null;
   coverPhoto: string | null;
   bio: string | null;
-  isProfileComplete: boolean;
   clubs?: Club[];
 }
 
@@ -40,7 +39,6 @@ class UserStore {
     photoURL: authUser.photoURL,
     coverPhoto: authUser.coverPhoto,
     bio: authUser.bio,
-    isProfileComplete: authUser.isProfileComplete,
     clubs: authUser.clubs || [],
   });
 
@@ -75,7 +73,6 @@ class UserStore {
           photoURL: response.data.photoURL || null,
           coverPhoto: response.data.coverPhoto || null,
           bio: response.data.bio || null,
-          isProfileComplete: response.data.isProfileComplete || false,
           clubs: response.data.clubs || [],
         };
         this.setLoadingState(false);
@@ -94,7 +91,6 @@ class UserStore {
     bio?: string;
     photoURL?: string;
     coverPhoto?: string;
-    isProfileComplete?: boolean;
   }): Promise<boolean> {
     if (!authStore.isAuthenticated) return false;
 

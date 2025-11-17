@@ -28,7 +28,7 @@ const SuperAdminLogin: React.FC = () => {
 
       authStore.setAuthData(token, user);
 
-      navigate("/superadmin/page");
+      navigate("/venues");
     } catch (err) {
       setError("Invalid credentials");
       console.error("Login error:", err);

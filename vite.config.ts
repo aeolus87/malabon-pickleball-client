@@ -25,10 +25,20 @@ export default defineConfig(({ command, mode }) => {
       host: true, // Allow external connections
       proxy: {
         "/api": {
-          // Be tolerant if someone sets VITE_API_URL with /api by mistake
-          target: (env.VITE_API_URL || "http://localhost:5000").replace(/\/?api\/?$/, ""),
+          // Always use localhost:5000 in development, ignore VITE_API_URL for proxy
+          target: isDevelopment ? "http://localhost:5000" : (env.VITE_API_URL || "http://localhost:5000").replace(/\/?api\/?$/, ""),
           changeOrigin: true,
           ws: true,
+          secure: false,
+          rewrite: (path) => {
+            // Rewrite /api/health to /health since backend has it at root
+            if (path === "/api/health") {
+              return "/health";
+            }
+            // Keep /api prefix for all other routes since backend routes already include /api
+            // No rewrite needed - pass through as is
+            return path;
+          },
         },
       },
     },

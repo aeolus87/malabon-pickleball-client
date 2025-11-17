@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { containsProfanity, getProfanityErrorMessage } from "../../utils/profanityFilter";
+import { sanitizeFormInput, sanitizeEmail, containsDangerousPatterns } from "../../utils/securityUtils";
 
 // Validation
 const validateEmail = (email: string) => {
@@ -70,6 +72,12 @@ const ContactPage: React.FC = () => {
       newErrors.name =
         "Name should only contain letters, spaces, and common punctuation";
       isValid = false;
+    } else if (containsProfanity(formData.name)) {
+      newErrors.name = getProfanityErrorMessage();
+      isValid = false;
+    } else if (containsDangerousPatterns(formData.name)) {
+      newErrors.name = "Name contains invalid characters";
+      isValid = false;
     }
 
     // Email validation
@@ -82,8 +90,20 @@ const ContactPage: React.FC = () => {
     }
 
     // Subject validation
-    if (!formData.subject) {
-      newErrors.subject = "Please select a subject";
+    if (!formData.subject.trim()) {
+      newErrors.subject = "Subject is required";
+      isValid = false;
+    } else if (formData.subject.length < 3) {
+      newErrors.subject = "Subject must be at least 3 characters";
+      isValid = false;
+    } else if (formData.subject.length > 200) {
+      newErrors.subject = "Subject must be less than 200 characters";
+      isValid = false;
+    } else if (containsProfanity(formData.subject)) {
+      newErrors.subject = getProfanityErrorMessage();
+      isValid = false;
+    } else if (containsDangerousPatterns(formData.subject)) {
+      newErrors.subject = "Subject contains invalid characters";
       isValid = false;
     }
 
@@ -97,6 +117,12 @@ const ContactPage: React.FC = () => {
     } else if (formData.message.length > characterLimits.message) {
       newErrors.message = `Message must be less than ${characterLimits.message} characters`;
       isValid = false;
+    } else if (containsProfanity(formData.message)) {
+      newErrors.message = getProfanityErrorMessage();
+      isValid = false;
+    } else if (containsDangerousPatterns(formData.message)) {
+      newErrors.message = "Message contains invalid characters";
+      isValid = false;
     }
 
     setErrors(newErrors);
@@ -106,11 +132,13 @@ const ContactPage: React.FC = () => {
   // Updated handleEmailChange to restrict input
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    // Sanitize email input
+    const sanitized = sanitizeEmail(value);
     // Only allow letters, numbers, periods, and @
-    if (/^[a-zA-Z0-9.@]*$/.test(value) || value === "") {
-      setFormData((prev) => ({ ...prev, email: value }));
-      if (value) {
-        setErrors((prev) => ({ ...prev, email: validateEmail(value) }));
+    if (/^[a-zA-Z0-9.@]*$/.test(sanitized) || sanitized === "") {
+      setFormData((prev) => ({ ...prev, email: sanitized }));
+      if (sanitized) {
+        setErrors((prev) => ({ ...prev, email: validateEmail(sanitized) }));
       } else {
         setErrors((prev) => ({ ...prev, email: "" }));
       }
@@ -124,12 +152,18 @@ const ContactPage: React.FC = () => {
   ) => {
     const { name, value } = e.target;
 
-    // Special handling for the name field
-    if (name === "name" && value !== "") {
+    // Sanitize input based on field type
+    let sanitizedValue = value;
+    if (name === "name") {
+      sanitizedValue = sanitizeFormInput(value, characterLimits.name);
       // Only allow valid name characters
-      if (!validateName(value)) {
+      if (sanitizedValue !== "" && !validateName(sanitizedValue)) {
         return; // Don't update if invalid
       }
+    } else if (name === "subject") {
+      sanitizedValue = sanitizeFormInput(value, 200);
+    } else if (name === "message") {
+      sanitizedValue = sanitizeFormInput(value, characterLimits.message);
     }
 
     // Remove error when user starts typing
@@ -140,7 +174,7 @@ const ContactPage: React.FC = () => {
       });
     }
 
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: sanitizedValue }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -157,15 +191,21 @@ const ContactPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+      // Sanitize all form data before sending
+      const sanitizedName = sanitizeFormInput(formData.name, characterLimits.name);
+      const sanitizedEmail = sanitizeEmail(formData.email);
+      const sanitizedSubject = sanitizeFormInput(formData.subject, 200);
+      const sanitizedMessage = sanitizeFormInput(formData.message, characterLimits.message);
+
       // Prepare form data with better email formatting
       const formPayload = {
         access_key: WEB3FORMS_ACCESS_KEY,
         from_name: "Malabon Pickleballers Contact Form",
-        name: formData.name,
-        email: formData.email,
-        subject: `${formData.subject} Inquiry from ${formData.name}`,
+        name: sanitizedName,
+        email: sanitizedEmail,
+        subject: `${sanitizedSubject} Inquiry from ${sanitizedName}`,
         botcheck: "",
-        replyto: formData.email,
+        replyto: sanitizedEmail,
         website: "Malabon Pickleballers",
         message: `Dear Admin,
 
@@ -173,17 +213,17 @@ A new inquiry has been submitted through the Malabon Pickleballers website conta
 
 Contact Details:
 ---------------
-Name: ${formData.name}
-Email: ${formData.email}
-Subject: ${formData.subject}
+Name: ${sanitizedName}
+Email: ${sanitizedEmail}
+Subject: ${sanitizedSubject}
 
 Message Content:
 --------------
-${formData.message}
+${sanitizedMessage}
 
 -------------------
 This is an automated message from the Malabon Pickleballers website contact form.
-Please reply directly to ${formData.email} to respond to this inquiry.`,
+Please reply directly to ${sanitizedEmail} to respond to this inquiry.`,
       };
 
       // Submit to Web3Forms with standard headers
@@ -412,26 +452,20 @@ Please reply directly to ${formData.email} to respond to this inquiry.`,
                   >
                     Subject *
                   </label>
-                  <select
+                  <input
+                    type="text"
                     id="subject"
                     name="subject"
                     value={formData.subject}
                     onChange={handleChange}
+                    maxLength={200}
                     className={`block w-full rounded-md p-4 text-lg bg-gray-50 border border-gray-300 shadow-sm focus:ring-brand-500 focus:border-brand-500 dark:bg-dark-muted dark:border-dark-border dark:text-gray-100 ${
                       errors.subject
                         ? "border-red-300 dark:border-red-700 focus:ring-red-500 focus:border-red-500"
                         : ""
                     }`}
                     required
-                  >
-                    <option value="">Select a subject</option>
-                    <option value="general">General Inquiry</option>
-                    <option value="membership">Membership</option>
-                    <option value="events">Events</option>
-                    <option value="training">Training</option>
-                    <option value="feedback">Feedback</option>
-                    <option value="other">Other</option>
-                  </select>
+                  />
                   {errors.subject && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
                       {errors.subject}

@@ -21,7 +21,7 @@ const ClubDetailPage = lazy(() => import("./pages/ClubDetailPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const GoogleCallbackPage = lazy(() => import("./pages/GoogleCallback"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
-const ProfileComplete = lazy(() => import("./pages/ProfileComplete"));
+const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const SuperAdminPage = lazy(() => import("./pages/SuperAdminPage"));
 const SuperAdminLogin = lazy(() => import("./pages/SuperAdminLogin"));
@@ -32,7 +32,6 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
   requireSuperAdmin?: boolean;
-  checkProfileComplete?: boolean;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(
@@ -40,7 +39,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(
     children,
     requireAdmin = false,
     requireSuperAdmin = false,
-    checkProfileComplete = false,
   }) => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -64,7 +62,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(
               ? {
                   id: data.user.id,
                   email: data.user.email,
-                  isProfileComplete: data.user.isProfileComplete,
+                  isVerified: data.user.isVerified,
                 }
               : null,
             currentPath: location.pathname,
@@ -78,6 +76,26 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(
             );
             navigate("/login", {
               state: { from: location.pathname },
+              replace: true,
+            });
+            return;
+          }
+
+          // Check if user is verified (allow access to /register and /verify-email for unverified users)
+          if (
+            !data.user?.isVerified &&
+            location.pathname !== "/register" &&
+            location.pathname !== "/verify-email"
+          ) {
+            console.log(
+              "User not verified, redirecting to register from",
+              location.pathname
+            );
+            navigate("/register", {
+              state: { 
+                from: location.pathname,
+                message: "Please verify your email before accessing this page."
+              },
               replace: true,
             });
             return;
@@ -101,24 +119,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(
             return;
           }
 
-          // Only redirect to profile/complete if:
-          // 1. We're checking for profile completion
-          // 2. The user's profile is incomplete
-          // 3. We're not already on a venues page (prevents redirect loop on refresh)
-          // 4. We're not already on the profile/complete page (prevents redirect loop)
-          if (
-            checkProfileComplete &&
-            !data.user?.isProfileComplete &&
-            !location.pathname.includes("/venues") &&
-            location.pathname !== "/profile/complete"
-          ) {
-            console.log(
-              "Profile not complete, redirecting from",
-              location.pathname
-            );
-            navigate("/profile/complete", { replace: true });
-            return;
-          }
         },
         { fireImmediately: true }
       );
@@ -129,7 +129,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(
       location,
       requireAdmin,
       requireSuperAdmin,
-      checkProfileComplete,
     ]);
 
     // Show loading state while authentication check is in progress
@@ -243,6 +242,7 @@ const App: React.FC = observer(() => {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route
             path="/auth/google/callback"
             element={<GoogleCallbackPage />}
@@ -255,7 +255,7 @@ const App: React.FC = observer(() => {
           <Route
             path="/venues"
             element={
-              <ProtectedRoute checkProfileComplete>
+              <ProtectedRoute>
                 <VenuesPage />
               </ProtectedRoute>
             }
@@ -269,17 +269,9 @@ const App: React.FC = observer(() => {
             }
           />
           <Route
-            path="/profile/complete"
-            element={
-              <ProtectedRoute>
-                <ProfileComplete />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/clubs"
             element={
-              <ProtectedRoute checkProfileComplete>
+              <ProtectedRoute>
                 <ClubsPage />
               </ProtectedRoute>
             }
@@ -287,7 +279,7 @@ const App: React.FC = observer(() => {
           <Route
             path="/clubs/:clubId"
             element={
-              <ProtectedRoute checkProfileComplete>
+              <ProtectedRoute>
                 <ClubDetailPage />
               </ProtectedRoute>
             }

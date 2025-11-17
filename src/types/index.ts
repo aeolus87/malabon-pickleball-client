@@ -4,7 +4,6 @@ export interface User {
   displayName: string | null;
   photoURL: string | null;
   bio?: string | null;
-  isProfileComplete?: boolean;
   isAdmin?: boolean;
 }
 

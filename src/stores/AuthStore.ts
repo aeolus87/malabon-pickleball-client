@@ -1,6 +1,5 @@
 import {
   makeAutoObservable,
-  action,
   runInAction,
   reaction,
   IReactionDisposer,
@@ -17,7 +16,7 @@ export interface User {
   coverPhoto: string | null;
   isAdmin: boolean;
   isSuperAdmin: boolean;
-  isProfileComplete: boolean;
+  isVerified: boolean;
   bio: string | null;
   clubs: string[];
 }
@@ -60,7 +59,6 @@ class AuthStore {
     };
   };
 
-  @action
   private setupAxiosInterceptors() {
     // Add token to requests
     axios.interceptors.request.use((config) => {
@@ -84,7 +82,6 @@ class AuthStore {
     );
   }
 
-  @action
   private loadUserFromStorage() {
     const storedUser = localStorage.getItem("user");
     const storedToken = localStorage.getItem("token");
@@ -102,7 +99,6 @@ class AuthStore {
     }
   }
 
-  @action
   private saveUserToStorage() {
     if (this.user && this.token) {
       localStorage.setItem("user", JSON.stringify(this.user));
@@ -110,14 +106,12 @@ class AuthStore {
     }
   }
 
-  @action
   private clearStorage() {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     delete axios.defaults.headers.common["Authorization"];
   }
 
-  @action
   clearAuth(isAccountDeleted = false) {
     this.user = null;
     this.token = null;
@@ -131,12 +125,10 @@ class AuthStore {
     }
   }
 
-  @action
   clearError() {
     this.error = null;
   }
 
-  @action
   async checkSession(): Promise<boolean> {
       if (this.sessionChecked) {
         return this.isAuthenticated;
@@ -184,7 +176,6 @@ class AuthStore {
     }
   }
 
-  @action
   async getGoogleAuthUrl(): Promise<string> {
     try {
       const codeVerifier = this.generateCodeVerifier();
@@ -217,7 +208,6 @@ class AuthStore {
     return result;
   }
 
-  @action
   async exchangeCodeForToken(code: string): Promise<User | null> {
     if (this.isAuthenticated) {
       return this.user;
@@ -260,7 +250,6 @@ class AuthStore {
     }
   }
 
-  @action
   async signInWithGoogle(token: string): Promise<User | null> {
     this.setLoadingState(true);
 
@@ -280,8 +269,7 @@ class AuthStore {
     }
   }
 
-  @action
-  async registerLocal(input: { firstName: string; lastName: string; phoneNumber?: string; username: string; password: string; email?: string; }): Promise<User | null> {
+  async registerLocal(input: { firstName: string; lastName: string; phoneNumber?: string; username: string; password: string; email: string; }): Promise<User | null> {
     this.setLoadingState(true);
     try {
       const response = await axios.post("/auth/register", input);
@@ -296,7 +284,6 @@ class AuthStore {
     }
   }
 
-  @action
   async loginWithPassword(identifier: string, password: string): Promise<User | null> {
     this.setLoadingState(true);
     try {
@@ -307,12 +294,22 @@ class AuthStore {
       });
       return this.user;
     } catch (error: any) {
-      this.setLoadingState(false, error.response?.data?.error || "Invalid credentials");
+      const errorCode = error.response?.data?.code;
+      const errorMessage = error.response?.data?.error || "Invalid credentials";
+      
+      // Preserve EMAIL_NOT_VERIFIED error code for LoginPage to handle
+      if (errorCode === "EMAIL_NOT_VERIFIED") {
+        const customError: any = new Error(errorMessage);
+        customError.code = "EMAIL_NOT_VERIFIED";
+        this.setLoadingState(false, errorMessage);
+        throw customError;
+      }
+      
+      this.setLoadingState(false, errorMessage);
       return null;
     }
   }
 
-  @action
   async makeUserAdmin(email: string): Promise<boolean> {
     if (!this.isAdmin) {
       this.setLoadingState(false, "Only admins can make other users admin");
@@ -328,13 +325,11 @@ class AuthStore {
     }
   }
 
-  @action
   async updateUserProfile(updates: {
     displayName?: string;
     bio?: string;
     photoURL?: string;
     coverPhoto?: string;
-    isProfileComplete?: boolean;
   }): Promise<boolean> {
     this.setLoadingState(true);
 
@@ -361,7 +356,6 @@ class AuthStore {
     }
   }
 
-  @action
   async logout() {
     if (!this.isAuthenticated) return;
 
@@ -384,10 +378,6 @@ class AuthStore {
 
   get isAdmin() {
     return !!this.user?.isAdmin;
-  }
-
-  get isProfileComplete() {
-    return !!this.user?.isProfileComplete;
   }
 
   onAuthStateChange(callback: (isAuthenticated: boolean) => void): IReactionDisposer {

@@ -169,10 +169,6 @@ class ClubStore {
         this.setLoadingState(false);
       });
 
-      // Update profile completion if needed
-      if (!authStore.user?.isProfileComplete) {
-        await authStore.updateUserProfile({ isProfileComplete: true });
-      }
 
       return true;
     } catch (error: any) {
