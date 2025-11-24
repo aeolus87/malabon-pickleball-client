@@ -82,7 +82,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(
           }
 
           // Check if user is verified (allow access to /register and /verify-email for unverified users)
+          // Skip verification check for super admin
           if (
+            !data.user?.isSuperAdmin &&
             !data.user?.isVerified &&
             location.pathname !== "/register" &&
             location.pathname !== "/verify-email"
