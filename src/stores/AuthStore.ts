@@ -44,29 +44,34 @@ class AuthStore {
     this.user = userData;
     this.sessionChecked = true;
     this.setLoadingState(false);
-    
+
     // Set token in axios defaults and save to storage
     axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     this.saveUserToStorage();
   };
 
-  private preserveUserPhotos = (newUserData: User): User => {
-    // Preserve custom photos when updating user data
-    return {
-      ...newUserData,
-      photoURL: this.user?.photoURL || newUserData.photoURL,
-      coverPhoto: this.user?.coverPhoto || newUserData.coverPhoto,
-    };
+  /**
+   * Syncs user data from UserStore profile updates.
+   * Called by UserStore after successful profile updates.
+   */
+  syncUserData = (updates: Partial<User>) => {
+    if (this.user) {
+      this.user = {
+        ...this.user,
+        ...updates,
+      };
+      this.saveUserToStorage();
+    }
   };
 
   private setupAxiosInterceptors() {
     // Add token to requests
     axios.interceptors.request.use((config) => {
       const token = this.token;
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
     });
 
     // Handle auth errors
@@ -130,16 +135,16 @@ class AuthStore {
   }
 
   async checkSession(): Promise<boolean> {
-      if (this.sessionChecked) {
-        return this.isAuthenticated;
-      }
+    if (this.sessionChecked) {
+      return this.isAuthenticated;
+    }
 
     const token = localStorage.getItem("token");
-      if (!token) {
-          this.clearAuth();
+    if (!token) {
+      this.clearAuth();
       this.sessionChecked = true;
-        return false;
-      }
+      return false;
+    }
 
     try {
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
@@ -147,13 +152,12 @@ class AuthStore {
 
       if (!response.data.user) {
         this.clearAuth(true);
-          this.sessionChecked = true;
+        this.sessionChecked = true;
         return false;
       }
 
       runInAction(() => {
-        const userData = this.preserveUserPhotos(response.data.user);
-        this.user = userData;
+        this.user = response.data.user;
         this.token = token;
         this.error = null;
         this.sessionChecked = true;
@@ -170,11 +174,15 @@ class AuthStore {
         return false;
       }
 
-        this.clearAuth();
+      this.clearAuth();
       this.sessionChecked = true;
       return false;
     }
   }
+
+  // ============================================
+  // Google OAuth
+  // ============================================
 
   async getGoogleAuthUrl(): Promise<string> {
     try {
@@ -184,7 +192,7 @@ class AuthStore {
       const response = await axios.get("/auth/google/url", {
         params: { codeVerifier },
       });
-      
+
       return response.data.authUrl;
     } catch (error) {
       console.error("Failed to get Google auth URL:", error);
@@ -230,8 +238,7 @@ class AuthStore {
       localStorage.removeItem("codeVerifier");
 
       runInAction(() => {
-        const userData = this.preserveUserPhotos(response.data.user);
-        this.setAuthData(response.data.token, userData);
+        this.setAuthData(response.data.token, response.data.user);
       });
 
       return this.user;
@@ -257,8 +264,7 @@ class AuthStore {
       const response = await axios.post("/auth/google/signin", { token });
 
       runInAction(() => {
-        const userData = this.preserveUserPhotos(response.data.user);
-        this.setAuthData(response.data.token, userData);
+        this.setAuthData(response.data.token, response.data.user);
       });
 
       return this.user;
@@ -269,13 +275,23 @@ class AuthStore {
     }
   }
 
-  async registerLocal(input: { firstName: string; lastName: string; phoneNumber?: string; username: string; password: string; email: string; }): Promise<User | null> {
+  // ============================================
+  // Local Authentication
+  // ============================================
+
+  async registerLocal(input: {
+    firstName: string;
+    lastName: string;
+    phoneNumber?: string;
+    username: string;
+    password: string;
+    email: string;
+  }): Promise<User | null> {
     this.setLoadingState(true);
     try {
       const response = await axios.post("/auth/register", input);
       runInAction(() => {
-        const userData = this.preserveUserPhotos(response.data.user);
-        this.setAuthData(response.data.token, userData);
+        this.setAuthData(response.data.token, response.data.user);
       });
       return this.user;
     } catch (error: any) {
@@ -289,14 +305,13 @@ class AuthStore {
     try {
       const response = await axios.post("/auth/login", { identifier, password });
       runInAction(() => {
-        const userData = this.preserveUserPhotos(response.data.user);
-        this.setAuthData(response.data.token, userData);
+        this.setAuthData(response.data.token, response.data.user);
       });
       return this.user;
     } catch (error: any) {
       const errorCode = error.response?.data?.code;
       const errorMessage = error.response?.data?.error || "Invalid credentials";
-      
+
       // Preserve EMAIL_NOT_VERIFIED error code for LoginPage to handle
       if (errorCode === "EMAIL_NOT_VERIFIED") {
         const customError: any = new Error(errorMessage);
@@ -304,11 +319,15 @@ class AuthStore {
         this.setLoadingState(false, errorMessage);
         throw customError;
       }
-      
+
       this.setLoadingState(false, errorMessage);
       return null;
     }
   }
+
+  // ============================================
+  // Admin Operations
+  // ============================================
 
   async makeUserAdmin(email: string): Promise<boolean> {
     if (!this.isAdmin) {
@@ -325,52 +344,29 @@ class AuthStore {
     }
   }
 
-  async updateUserProfile(updates: {
-    displayName?: string;
-    bio?: string;
-    photoURL?: string;
-    coverPhoto?: string;
-  }): Promise<boolean> {
-    this.setLoadingState(true);
-
-    try {
-      const response = await axios.put("/users/profile", updates);
-
-      runInAction(() => {
-        if (this.user) {
-          this.user = {
-            ...this.user,
-            ...updates,
-            ...response.data.user,
-          };
-          this.setLoadingState(false);
-          this.saveUserToStorage();
-        }
-      });
-
-      return true;
-    } catch (error: any) {
-      console.error("Profile update error:", error);
-      this.setLoadingState(false, error.response?.data?.error || "Failed to update profile");
-      return false;
-    }
-  }
+  // ============================================
+  // Session Management
+  // ============================================
 
   async logout() {
     if (!this.isAuthenticated) return;
 
     this.setLoadingState(true);
 
-        try {
-          await axios.post("/auth/logout");
-        } catch (error) {
-          console.log("Logout API call failed, continuing with client logout");
-      }
+    try {
+      await axios.post("/auth/logout");
+    } catch (error) {
+      console.log("Logout API call failed, continuing with client logout");
+    }
 
-        this.clearAuth();
-      socketStore.disconnect();
-      window.location.href = "/login";
+    this.clearAuth();
+    socketStore.disconnect();
+    window.location.href = "/login";
   }
+
+  // ============================================
+  // Computed Properties
+  // ============================================
 
   get isAuthenticated() {
     return !!this.user && !!this.token;
@@ -379,6 +375,10 @@ class AuthStore {
   get isAdmin() {
     return !!this.user?.isAdmin;
   }
+
+  // ============================================
+  // Reactions
+  // ============================================
 
   onAuthStateChange(callback: (isAuthenticated: boolean) => void): IReactionDisposer {
     return reaction(

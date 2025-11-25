@@ -230,16 +230,12 @@ const EditProfile: React.FC<EditProfileProps> = observer(
           updates.coverPhoto = coverPhotoURL;
         }
 
-        const success = await authStore.updateUserProfile(updates);
+        const success = await userStore.updateProfile(updates);
 
         if (success) {
-          await userStore.loadProfile();
-
           onClose();
         } else {
           setError("Failed to update profile");
-
-          await userStore.loadProfile();
         }
       } catch (error) {
         console.error("Failed to update profile:", error);

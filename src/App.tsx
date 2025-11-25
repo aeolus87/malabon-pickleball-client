@@ -1,5 +1,5 @@
 // src/App.tsx
-import React, { useEffect, lazy, Suspense } from "react";
+import React, { useEffect, lazy, Suspense, useCallback } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { reaction, runInAction } from "mobx";
@@ -7,6 +7,7 @@ import { authStore } from "./stores/AuthStore";
 import { socketStore } from "./stores/SocketStore";
 import { userStore } from "./stores/UserStore";
 import Navbar from "./components/Navbar";
+import { useIdleTimeout } from "./hooks/useIdleTimeout";
 import { printConsoleWelcome, warmupServer } from "./utils/consoleUtils";
 import "./index.css";
 
@@ -169,6 +170,22 @@ const LoadingSpinner = () => (
 // App component
 const App: React.FC = observer(() => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Idle timeout - logs out user after 5 minutes of inactivity
+  const handleIdleLogout = useCallback(() => {
+    authStore.clearAuth();
+    socketStore.disconnect();
+    userStore.clearProfile();
+    navigate("/login?idle=true", { replace: true });
+  }, [navigate]);
+
+  useIdleTimeout({
+    timeout: 5 * 60 * 1000, // 5 minutes
+    onIdle: handleIdleLogout,
+    enabled: authStore.isAuthenticated,
+  });
+
   // Initialize server connection and display welcome message
   useEffect(() => {
     // Print welcome ASCII art to console
@@ -238,8 +255,8 @@ const App: React.FC = observer(() => {
 
   return (
     <Navbar>
-      <Suspense fallback={<LoadingSpinner />}>
-        <Routes>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />

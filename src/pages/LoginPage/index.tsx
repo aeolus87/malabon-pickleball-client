@@ -15,6 +15,7 @@ const LoginPage = observer(({ deletedAccount }: LoginPageProps = {}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [accountDeleted, setAccountDeleted] = useState(false);
+  const [idleLogout, setIdleLogout] = useState(false);
 
   // Access the observables directly in the render function to make the observer HOC work properly
   // The component will now re-render when these change
@@ -22,11 +23,14 @@ const LoginPage = observer(({ deletedAccount }: LoginPageProps = {}) => {
   const isLoading = authStore.loading;
   const authError = authStore.error;
 
-  // Check URL query parameters for deleted account status
+  // Check URL query parameters for deleted account or idle logout status
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("deleted") === "true" || deletedAccount) {
       setAccountDeleted(true);
+    }
+    if (params.get("idle") === "true") {
+      setIdleLogout(true);
     }
   }, [location.search, deletedAccount]);
 
@@ -90,6 +94,14 @@ const LoginPage = observer(({ deletedAccount }: LoginPageProps = {}) => {
             Sign in to join the community
           </p>
         </div>
+
+        {idleLogout && (
+          <div className="rounded-md bg-gray-100 dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700">
+            <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+              You were logged out due to inactivity
+            </p>
+          </div>
+        )}
 
         {accountDeleted && (
           <div className="rounded-md bg-yellow-50 dark:bg-yellow-900/30 p-4 border border-yellow-200 dark:border-yellow-800">

@@ -13,6 +13,13 @@ export interface UserProfile {
   clubs?: Club[];
 }
 
+export interface ProfileUpdateData {
+  displayName?: string;
+  bio?: string;
+  photoURL?: string;
+  coverPhoto?: string;
+}
+
 class UserStore {
   profile: UserProfile | null = null;
   loading = false;
@@ -86,12 +93,11 @@ class UserStore {
     }
   }
 
-  async updateProfile(updates: {
-    displayName?: string;
-    bio?: string;
-    photoURL?: string;
-    coverPhoto?: string;
-  }): Promise<boolean> {
+  /**
+   * Updates the user profile. This is the single source of truth for profile updates.
+   * It updates both the UserStore and syncs changes to AuthStore.
+   */
+  async updateProfile(updates: ProfileUpdateData): Promise<boolean> {
     if (!authStore.isAuthenticated) return false;
 
     this.setLoadingState(true);
@@ -100,6 +106,7 @@ class UserStore {
       const response = await axios.put("/users/profile", updates);
 
       runInAction(() => {
+        // Update UserStore profile
         if (this.profile) {
           this.profile = {
             ...this.profile,
@@ -109,18 +116,22 @@ class UserStore {
         } else {
           this.profile = response.data.user;
         }
+
+        // Sync to AuthStore to keep user data consistent
+        if (authStore.user) {
+          authStore.syncUserData({
+            ...updates,
+            ...response.data.user,
+          });
+        }
+
         this.setLoadingState(false);
       });
-
-      // Keep auth store in sync if it has user data
-      if (authStore.user) {
-        await authStore.updateUserProfile(updates);
-      }
 
       return true;
     } catch (error: any) {
       console.error("Failed to update profile:", error);
-      this.setLoadingState(false, "Failed to update profile");
+      this.setLoadingState(false, error.response?.data?.error || "Failed to update profile");
       return false;
     }
   }
