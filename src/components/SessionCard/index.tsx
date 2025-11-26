@@ -80,14 +80,14 @@ const SessionCard: React.FC<SessionCardProps> = observer(({
             </span>
           </div>
           {session.coachId && (
-            <div className="flex items-center gap-1">
+            <Link to={`/profile/${session.coachId._id}`} className="flex items-center gap-1 hover:opacity-80">
               <Avatar
                 src={session.coachId.photoURL}
                 name={session.coachId.displayName}
                 size="xs"
               />
               <CoachBadge role="coach" size="xs" />
-            </div>
+            </Link>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -293,4 +293,5 @@ const SessionCard: React.FC<SessionCardProps> = observer(({
 });
 
 export default SessionCard;
+
 

@@ -28,12 +28,14 @@ const SuperAdminPage = lazy(() => import("./pages/SuperAdminPage"));
 const SuperAdminLogin = lazy(() => import("./pages/SuperAdminLogin"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const UserProfilePage = lazy(() => import("./pages/UserProfilePage"));
+const CoachPage = lazy(() => import("./pages/CoachPage"));
 
 // Protected route component using MobX auth store
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
   requireSuperAdmin?: boolean;
+  requireCoach?: boolean;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(
@@ -41,6 +43,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(
     children,
     requireAdmin = false,
     requireSuperAdmin = false,
+    requireCoach = false,
   }) => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -123,6 +126,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(
             return;
           }
 
+          // Coach access: coaches, admins, and super admins can access coach pages
+          if (requireCoach && data.user?.role !== "coach" && !data.user?.isAdmin && !data.user?.isSuperAdmin) {
+            console.log("Coach access required but user is not a coach/admin:", {
+              userId: data.user?.id,
+              email: data.user?.email,
+              role: data.user?.role,
+            });
+            navigate("/", { replace: true });
+            return;
+          }
+
         },
         { fireImmediately: true }
       );
@@ -133,6 +147,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = observer(
       location,
       requireAdmin,
       requireSuperAdmin,
+      requireCoach,
     ]);
 
     // Show loading state while authentication check is in progress
@@ -302,6 +317,16 @@ const App: React.FC = observer(() => {
             element={
               <ProtectedRoute>
                 <ClubDetailPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Coach Routes */}
+          <Route
+            path="/coach"
+            element={
+              <ProtectedRoute requireCoach>
+                <CoachPage />
               </ProtectedRoute>
             }
           />

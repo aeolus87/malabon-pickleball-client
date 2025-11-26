@@ -12,6 +12,7 @@ interface User {
   photoURL: string | null;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  role: string;
   createdAt: string;
 }
 
@@ -85,6 +86,20 @@ const SuperAdminPage: React.FC = observer(() => {
     } catch (error) {
       console.error("Error revoking admin privileges:", error);
       setError("Failed to revoke admin privileges");
+      setTimeout(() => setError(""), 3000);
+    }
+  };
+
+  const handleSetRole = async (userId: string, role: string) => {
+    try {
+      await axios.post(`/users/set-role/${userId}`, { role });
+      setSuccessMessage(`User role updated to ${role}`);
+      setTimeout(() => setSuccessMessage(""), 3000);
+      fetchUsers();
+      fetchAdmins();
+    } catch (error: any) {
+      console.error("Error setting user role:", error);
+      setError(error.response?.data?.error || "Failed to update role");
       setTimeout(() => setError(""), 3000);
     }
   };
@@ -363,19 +378,25 @@ const SuperAdminPage: React.FC = observer(() => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {user.isSuperAdmin ? (
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
-                              Super Admin
-                            </span>
-                          ) : user.isAdmin ? (
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                              Admin
-                            </span>
-                          ) : (
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
-                              User
-                            </span>
-                          )}
+                          <div className="flex flex-wrap gap-1">
+                            {user.isSuperAdmin ? (
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
+                                Super Admin
+                              </span>
+                            ) : user.isAdmin ? (
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                                Admin
+                              </span>
+                            ) : user.role === "coach" ? (
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+                                Coach
+                              </span>
+                            ) : (
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                                Player
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -383,32 +404,50 @@ const SuperAdminPage: React.FC = observer(() => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          {!user.isAdmin && (
-                            <button
-                              onClick={() => handleGrantAdmin(user.id)}
-                              className="text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-brand-300 mr-3"
-                            >
-                              Make Admin
-                            </button>
-                          )}
-                          {user.isAdmin && !user.isSuperAdmin && (
-                            <button
-                              onClick={() => handleRevokeAdmin(user.id)}
-                              className="text-orange-600 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-300 mr-3"
-                            >
-                              Revoke Admin
-                            </button>
-                          )}
-                          {!user.isSuperAdmin && (
-                            <button
-                              onClick={() =>
-                                handleDeleteUser(user.id, user.email)
-                              }
-                              className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
-                            >
-                              Delete
-                            </button>
-                          )}
+                          <div className="flex flex-wrap gap-2">
+                            {!user.isAdmin && (
+                              <button
+                                onClick={() => handleGrantAdmin(user.id)}
+                                className="text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-brand-300"
+                              >
+                                Make Admin
+                              </button>
+                            )}
+                            {user.isAdmin && !user.isSuperAdmin && (
+                              <button
+                                onClick={() => handleRevokeAdmin(user.id)}
+                                className="text-orange-600 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-300"
+                              >
+                                Revoke Admin
+                              </button>
+                            )}
+                            {!user.isSuperAdmin && user.role !== "coach" && (
+                              <button
+                                onClick={() => handleSetRole(user.id, "coach")}
+                                className="text-amber-600 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300"
+                              >
+                                Make Coach
+                              </button>
+                            )}
+                            {!user.isSuperAdmin && user.role === "coach" && (
+                              <button
+                                onClick={() => handleSetRole(user.id, "player")}
+                                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300"
+                              >
+                                Remove Coach
+                              </button>
+                            )}
+                            {!user.isSuperAdmin && (
+                              <button
+                                onClick={() =>
+                                  handleDeleteUser(user.id, user.email)
+                                }
+                                className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

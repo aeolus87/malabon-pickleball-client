@@ -71,7 +71,7 @@ const UserProfilePage: React.FC = observer(() => {
               This user doesn't exist or their profile is private.
             </p>
             <Link
-              to="/"
+              to="/venues"
               className="text-green-600 hover:text-green-700 font-medium"
             >
               ← Back to Home
@@ -190,10 +190,10 @@ const UserProfilePage: React.FC = observer(() => {
         {/* Back link */}
         <div className="mt-6 text-center">
           <Link
-            to="/"
+            to="/venues"
             className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm"
           >
-            ← Back to Home
+            ← Back to Venues
           </Link>
         </div>
       </div>
@@ -202,4 +202,5 @@ const UserProfilePage: React.FC = observer(() => {
 });
 
 export default UserProfilePage;
+
 

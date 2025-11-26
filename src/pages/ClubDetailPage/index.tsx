@@ -195,7 +195,11 @@ const ClubDetailPage: React.FC = observer(() => {
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
               {clubStore.clubMembers.map((member) => (
-                <div key={member._id} className="p-4 sm:px-6 flex items-center">
+                <Link
+                  key={member._id}
+                  to={`/profile/${member._id}`}
+                  className="p-4 sm:px-6 flex items-center hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                >
                   <div className="flex-shrink-0 mr-4">
                     <Avatar
                       src={member.photoURL}
@@ -205,7 +209,7 @@ const ClubDetailPage: React.FC = observer(() => {
                     />
                   </div>
                   <div>
-                    <h3 className="text-base font-medium text-gray-800 dark:text-gray-200">
+                    <h3 className="text-base font-medium text-gray-800 dark:text-gray-200 hover:underline">
                       {member.displayName || "Anonymous Member"}
                     </h3>
                     {member.email && (
@@ -214,7 +218,7 @@ const ClubDetailPage: React.FC = observer(() => {
                       </p>
                     )}
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}

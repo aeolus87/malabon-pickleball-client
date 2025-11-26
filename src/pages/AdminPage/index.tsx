@@ -11,6 +11,8 @@ import AddVenueForm from "./components/AddVenueForm";
 import VenueGrid from "./components/VenueGrid";
 import AttendeesModal from "./components/AttendeesModal";
 import StatusConfirmModal from "./components/StatusConfirmModal";
+import CreateSessionForm from "./components/CreateSessionForm";
+import RoleManagement from "./components/RoleManagement";
 import { PendingStatusAction, SelectedVenue, Attendee } from "./types";
 
 const AdminPage: React.FC = observer(() => {
@@ -167,6 +169,12 @@ const AdminPage: React.FC = observer(() => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Management Tools Row */}
+        <div className="flex flex-wrap gap-4 mb-6">
+          <CreateSessionForm />
+          <RoleManagement />
+        </div>
+
         <AddVenueForm onSubmit={handleAddVenue} loading={venueStore.loading} />
 
         <VenueGrid

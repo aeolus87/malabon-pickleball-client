@@ -103,6 +103,7 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
   const user = authStore.user;
   const userProfile = userStore.profile;
   const isAdmin = authStore.user?.isAdmin;
+  const isCoach = authStore.user?.role === "coach" || authStore.user?.isAdmin || authStore.user?.isSuperAdmin;
 
   // Use the utility functions to get display name and avatar URL
   const userDisplayName = getDisplayName(
@@ -273,6 +274,35 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
                 </li>
               ))}
 
+              {/* Coach link if user is a coach */}
+              {isCoach && (
+                <li>
+                  <Link
+                    to="/coach"
+                    className={`flex items-center ${
+                      isSidebarCollapsed && !isMobile
+                        ? "justify-center px-2 py-3"
+                        : "px-3 py-2.5"
+                    } text-sm font-medium transition-colors rounded-lg ${
+                      isActive("/coach")
+                        ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                        : "text-gray-600 hover:bg-amber-50 hover:text-amber-700 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-amber-300"
+                    }`}
+                    onClick={() => isMobile && setIsMenuOpen(false)}
+                  >
+                    <span className={`${!(isSidebarCollapsed && !isMobile) ? "mr-3" : ""}`}>
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7zm2 15h-4v-1h4v1zm1.13-4.47l-.63.44V14h-5v-1.03l-.63-.44C8.21 11.68 7 10.39 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.39-1.21 2.68-2.87 3.53z"/>
+                        <circle cx="12" cy="9" r="2.5"/>
+                      </svg>
+                    </span>
+                    {!(isSidebarCollapsed && !isMobile) && (
+                      <span>Coach Panel</span>
+                    )}
+                  </Link>
+                </li>
+              )}
+
               {/* Admin link if user is admin */}
               {isAdmin && (
                 <li>
@@ -400,6 +430,8 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
                 ? "About Us"
                 : location.pathname === "/contact"
                 ? "Contact"
+                : location.pathname === "/coach"
+                ? "Coach Panel"
                 : location.pathname === "/admin"
                 ? "Admin Panel"
                 : location.pathname === "/superadmin"
