@@ -3,6 +3,14 @@ import axios from "axios";
 import { authStore } from "./AuthStore";
 import { Club } from "./ClubStore";
 
+export type UserRole = "player" | "coach" | "admin" | "superadmin";
+
+export interface CoachProfile {
+  bio?: string;
+  specialization?: string;
+  isAvailable: boolean;
+}
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -11,6 +19,28 @@ export interface UserProfile {
   coverPhoto: string | null;
   bio: string | null;
   clubs?: Club[];
+  role: UserRole;
+  coachProfile?: CoachProfile;
+  isPublicProfile: boolean;
+}
+
+export interface PublicUserProfile {
+  id: string;
+  displayName: string | null;
+  photoURL: string | null;
+  coverPhoto: string | null;
+  bio: string | null;
+  role: UserRole;
+  coachProfile?: CoachProfile;
+}
+
+export interface UserSearchResult {
+  _id: string;
+  displayName: string | null;
+  photoURL: string | null;
+  role: UserRole;
+  coachProfile?: CoachProfile;
+  bio: string | null;
 }
 
 export interface ProfileUpdateData {
@@ -24,6 +54,14 @@ class UserStore {
   profile: UserProfile | null = null;
   loading = false;
   error: string | null = null;
+  
+  // Search state
+  searchResults: UserSearchResult[] = [];
+  searchLoading = false;
+
+  // Public profile state
+  publicProfile: PublicUserProfile | null = null;
+  publicProfileLoading = false;
 
   constructor() {
     makeAutoObservable(this);
@@ -47,6 +85,9 @@ class UserStore {
     coverPhoto: authUser.coverPhoto,
     bio: authUser.bio,
     clubs: authUser.clubs || [],
+    role: authUser.role || "player",
+    coachProfile: authUser.coachProfile,
+    isPublicProfile: authUser.isPublicProfile !== false,
   });
 
   async loadProfile(): Promise<boolean> {
@@ -81,6 +122,9 @@ class UserStore {
           coverPhoto: response.data.coverPhoto || null,
           bio: response.data.bio || null,
           clubs: response.data.clubs || [],
+          role: response.data.role || "player",
+          coachProfile: response.data.coachProfile,
+          isPublicProfile: response.data.isPublicProfile !== false,
         };
         this.setLoadingState(false);
       });
@@ -134,6 +178,87 @@ class UserStore {
       this.setLoadingState(false, error.response?.data?.error || "Failed to update profile");
       return false;
     }
+  }
+
+  // ============================================
+  // Search Methods
+  // ============================================
+
+  async searchUsers(query: string): Promise<void> {
+    if (!query || query.trim().length < 2) {
+      runInAction(() => {
+        this.searchResults = [];
+      });
+      return;
+    }
+
+    runInAction(() => {
+      this.searchLoading = true;
+    });
+
+    try {
+      const response = await axios.get(`/users/search?q=${encodeURIComponent(query)}`);
+
+      runInAction(() => {
+        this.searchResults = response.data;
+        this.searchLoading = false;
+      });
+    } catch (error) {
+      console.error("Failed to search users:", error);
+      runInAction(() => {
+        this.searchResults = [];
+        this.searchLoading = false;
+      });
+    }
+  }
+
+  clearSearchResults(): void {
+    runInAction(() => {
+      this.searchResults = [];
+    });
+  }
+
+  // ============================================
+  // Public Profile Methods
+  // ============================================
+
+  async getPublicProfile(userId: string): Promise<PublicUserProfile | null> {
+    runInAction(() => {
+      this.publicProfileLoading = true;
+      this.publicProfile = null;
+    });
+
+    try {
+      const response = await axios.get(`/users/${userId}/profile`);
+
+      runInAction(() => {
+        this.publicProfile = {
+          id: response.data._id || response.data.id,
+          displayName: response.data.displayName,
+          photoURL: response.data.photoURL,
+          coverPhoto: response.data.coverPhoto,
+          bio: response.data.bio,
+          role: response.data.role || "player",
+          coachProfile: response.data.coachProfile,
+        };
+        this.publicProfileLoading = false;
+      });
+
+      return this.publicProfile;
+    } catch (error) {
+      console.error("Failed to fetch public profile:", error);
+      runInAction(() => {
+        this.publicProfile = null;
+        this.publicProfileLoading = false;
+      });
+      return null;
+    }
+  }
+
+  clearPublicProfile(): void {
+    runInAction(() => {
+      this.publicProfile = null;
+    });
   }
 
   clearProfile(): void {

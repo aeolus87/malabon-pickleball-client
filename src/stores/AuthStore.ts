@@ -8,6 +8,14 @@ import axios from "axios";
 import { socketStore } from "./SocketStore";
 
 // Types for the store
+export type UserRole = "player" | "coach" | "admin" | "superadmin";
+
+export interface CoachProfile {
+  bio?: string;
+  specialization?: string;
+  isAvailable: boolean;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -19,6 +27,9 @@ export interface User {
   isVerified: boolean;
   bio: string | null;
   clubs: string[];
+  role: UserRole;
+  coachProfile?: CoachProfile;
+  isPublicProfile: boolean;
 }
 
 class AuthStore {

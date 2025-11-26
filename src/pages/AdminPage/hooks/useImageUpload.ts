@@ -4,7 +4,7 @@ import axios from "axios";
 interface UseImageUploadReturn {
   file: File | null;
   preview: string | null;
-  inputRef: React.RefObject<HTMLInputElement | null>;
+  inputRef: React.RefObject<HTMLInputElement>;
   handleFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
   uploadToCloudinary: (folder: string) => Promise<string>;
   reset: () => void;

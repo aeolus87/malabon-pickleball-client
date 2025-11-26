@@ -1,8 +1,12 @@
 import React, { useEffect, useState, useCallback, memo } from "react";
 import { observer } from "mobx-react-lite";
+import { Link } from "react-router-dom";
 import { venueStore, Venue } from "../../stores/VenueStore";
+import { sessionStore } from "../../stores/SessionStore";
 import OptimizedImage from "../../components/OptimizedImage";
 import VenueMap from "../../components/VenueMap";
+import Avatar from "../../components/Avatar";
+import SessionCard from "../../components/SessionCard";
 // Temporary feature flag: hide map until ready
 const SHOW_MAP = false;
 
@@ -26,6 +30,8 @@ const VenueCard = memo(
   }: VenueCardProps) => {
     const isFull = venue.attendees.length >= 20;
     const [showMap, setShowMap] = useState(false);
+    const [showSessions, setShowSessions] = useState(false);
+    const venueSessions = sessionStore.getSessionsByVenueId(venue.id).filter(s => s.status !== 'cancelled');
 
     return (
       <div className="bg-white dark:bg-dark-card rounded-lg shadow-md overflow-hidden dark:border dark:border-dark-border flex flex-col h-full">
@@ -73,9 +79,9 @@ const VenueCard = memo(
             )}
           </div>
 
-          {/* Attendees Count */}
+          {/* Attendees Count & Avatars */}
           <div className="mb-3">
-            <p className="text-gray-700 dark:text-gray-300 text-sm">
+            <p className="text-gray-700 dark:text-gray-300 text-sm mb-2">
               <span
                 className={`${
                   isFull
@@ -95,6 +101,31 @@ const VenueCard = memo(
                 </span>
               )}
             </p>
+            {/* Clickable Attendee Avatars */}
+            {venue.attendees.length > 0 && (
+              <div className="flex -space-x-2 overflow-hidden">
+                {venue.attendees.slice(0, 5).map((attendee) => (
+                  <Link
+                    key={attendee.id}
+                    to={`/profile/${attendee.id}`}
+                    className="relative inline-block hover:z-10 transition-transform hover:scale-110"
+                    title={attendee.displayName || "Anonymous"}
+                  >
+                    <Avatar
+                      src={attendee.photoURL}
+                      name={attendee.displayName}
+                      size="sm"
+                      className="ring-2 ring-white dark:ring-gray-800"
+                    />
+                  </Link>
+                ))}
+                {venue.attendees.length > 5 && (
+                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 ring-2 ring-white dark:ring-gray-800 text-xs font-medium text-gray-600 dark:text-gray-300">
+                    +{venue.attendees.length - 5}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Cancellation Warning */}
@@ -139,6 +170,49 @@ const VenueCard = memo(
               </button>
             )}
           </div>
+
+          {/* Sessions Toggle */}
+          {venueSessions.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setShowSessions(!showSessions)}
+                className="flex items-center justify-between w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+              >
+                <span className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {venueSessions.length} upcoming session{venueSessions.length !== 1 ? 's' : ''}
+                </span>
+                <svg
+                  className={`w-4 h-4 transition-transform ${showSessions ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {/* Sessions List */}
+              {showSessions && (
+                <div className="mt-3 space-y-2">
+                  {venueSessions.slice(0, 3).map((session) => (
+                    <SessionCard
+                      key={session._id}
+                      session={session}
+                      compact
+                    />
+                  ))}
+                  {venueSessions.length > 3 && (
+                    <p className="text-xs text-center text-gray-500 dark:text-gray-400 pt-1">
+                      +{venueSessions.length - 3} more sessions
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         
         {/* Map Modal */}
@@ -178,8 +252,11 @@ const VenuesPage: React.FC = observer(() => {
         console.log("Initializing venues page...");
 
         // Since we're wrapped in ProtectedRoute, auth is already verified
-        // Just fetch venues directly
-        await venueStore.fetchVenues();
+        // Fetch venues and upcoming sessions in parallel
+        await Promise.all([
+          venueStore.fetchVenues(),
+          sessionStore.fetchUpcomingSessions(50),
+        ]);
       } catch (error) {
         console.error("Failed to initialize venues page:", error);
       } finally {

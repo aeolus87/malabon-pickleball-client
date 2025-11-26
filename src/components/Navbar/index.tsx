@@ -13,6 +13,7 @@ import {
   Book,
   Sun,
   Moon,
+  Search,
 } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { authStore } from "../../stores/AuthStore";
@@ -21,6 +22,7 @@ import { getDisplayName } from "../../utils/userUtils";
 import { useTheme } from "../../contexts/ThemeContext";
 import Footer from "../Footer";
 import Avatar from "../Avatar";
+import UserSearchModal from "../UserSearchModal";
 
 interface NavbarProps {
   children?: React.ReactNode;
@@ -29,6 +31,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const location = useLocation();
   const [isMobile, setIsMobile] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -322,6 +325,21 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
                 </li>
               )}
 
+              {/* Search Users */}
+              <li>
+                <button
+                  onClick={() => setIsSearchOpen(true)}
+                  className={`w-full flex items-center ${
+                    isSidebarCollapsed && !isMobile ? "justify-center px-2 py-3" : "px-3 py-2.5"
+                  } text-sm font-medium transition-colors rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-gray-100`}
+                >
+                  <span className={`${!(isSidebarCollapsed && !isMobile) ? "mr-3" : ""}`}>
+                    <Search size={20} />
+                  </span>
+                  {!(isSidebarCollapsed && !isMobile) && <span>Search Users</span>}
+                </button>
+              </li>
+
               {/* Theme Toggle */}
               <li>
                 <button
@@ -406,6 +424,12 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
             {children}
           </main>
         </div>
+
+        {/* User Search Modal */}
+        <UserSearchModal
+          isOpen={isSearchOpen}
+          onClose={() => setIsSearchOpen(false)}
+        />
       </div>
     );
   }
