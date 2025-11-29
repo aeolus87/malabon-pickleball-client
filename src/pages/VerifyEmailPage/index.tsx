@@ -12,6 +12,9 @@ const VerifyEmailPage: React.FC = () => {
   const [email, setEmail] = useState<string>("");
   const [code, setCode] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   useEffect(() => {
     const token = searchParams.get("token");
@@ -29,6 +32,34 @@ const VerifyEmailPage: React.FC = () => {
       setStatus("code-entry");
     }
   }, [searchParams, location]);
+
+  // Cooldown timer
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
+  const handleResendCode = async () => {
+    if (!email || resendCooldown > 0 || isResending) return;
+
+    setIsResending(true);
+    setResendSuccess(false);
+    setMessage("");
+
+    try {
+      await axios.post("/auth/resend-verification", { email });
+      setResendSuccess(true);
+      setResendCooldown(60); // 60 second cooldown
+      setTimeout(() => setResendSuccess(false), 5000);
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || "Failed to resend code";
+      setMessage(errorMessage);
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   const verifyEmailByToken = async (token: string) => {
     try {
@@ -130,6 +161,11 @@ const VerifyEmailPage: React.FC = () => {
                   {message}
                 </div>
               )}
+              {resendSuccess && (
+                <div className="rounded-md bg-green-50 dark:bg-green-900/30 p-3 border border-green-200 dark:border-green-800 text-sm text-green-700 dark:text-green-300">
+                  ✓ A new verification code has been sent to your email!
+                </div>
+              )}
               <form onSubmit={handleCodeSubmit} className="space-y-4">
                 <div>
                   <input
@@ -160,10 +196,30 @@ const VerifyEmailPage: React.FC = () => {
                   {isSubmitting ? "Verifying..." : "Verify Email"}
                 </button>
               </form>
+
+              {/* Resend Code Button */}
+              <div className="text-center pt-2 border-t border-gray-200 dark:border-gray-700">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                  Didn't receive the code?
+                </p>
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={!email || resendCooldown > 0 || isResending}
+                  className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+                >
+                  {isResending
+                    ? "Sending..."
+                    : resendCooldown > 0
+                    ? `Resend code in ${resendCooldown}s`
+                    : "Resend verification code"}
+                </button>
+              </div>
+
               <div className="text-center">
                 <button
                   onClick={() => navigate("/login", { replace: true })}
-                  className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm"
+                  className="text-gray-500 dark:text-gray-400 hover:underline text-sm"
                 >
                   Back to Login
                 </button>

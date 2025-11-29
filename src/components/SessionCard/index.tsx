@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { observer } from "mobx-react-lite";
 import { Link } from "react-router-dom";
 import { Session, sessionStore } from "../../stores/SessionStore";
@@ -24,11 +24,24 @@ const SessionCard: React.FC<SessionCardProps> = observer(({
   showVenue = false,
   compact = false,
 }) => {
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const isAttending = sessionStore.isUserAttending(session._id);
   const isAuthenticated = authStore.isAuthenticated;
   const isFull = session.status === "full";
   const isCancelled = session.status === "cancelled";
   const spotsLeft = session.maxPlayers - session.attendees.length;
+
+  // Check if session has ended
+  const isEnded = () => {
+    const now = new Date();
+    const sessionDate = new Date(session.date);
+    const [endHours, endMinutes] = session.endTime.split(":").map(Number);
+    const sessionEndTime = new Date(sessionDate);
+    sessionEndTime.setHours(endHours, endMinutes, 0, 0);
+    return now > sessionEndTime;
+  };
+
+  const hasEnded = isEnded();
 
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(":");
@@ -47,7 +60,12 @@ const SessionCard: React.FC<SessionCardProps> = observer(({
     });
   };
 
-  const handleAttendClick = async () => {
+  const handleAttendClick = () => {
+    setShowConfirmModal(true);
+  };
+
+  const confirmAttend = async () => {
+    setShowConfirmModal(false);
     if (onAttend) {
       onAttend();
     } else {
@@ -63,12 +81,20 @@ const SessionCard: React.FC<SessionCardProps> = observer(({
     }
   };
 
+  // Format for confirmation modal
+  const sessionDateFormatted = new Date(session.date).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
   if (compact) {
     return (
       <div
         className={`
           flex items-center justify-between p-3 rounded-lg border
-          ${isCancelled
+          ${isCancelled || hasEnded
             ? "bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 opacity-60"
             : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"}
         `}
@@ -94,7 +120,7 @@ const SessionCard: React.FC<SessionCardProps> = observer(({
           <span className="text-xs text-gray-500 dark:text-gray-400">
             {session.attendees.length}/{session.maxPlayers}
           </span>
-          {isAuthenticated && !isCancelled && (
+          {isAuthenticated && !isCancelled && !hasEnded && (
             isAttending ? (
               <button
                 onClick={handleLeaveClick}
@@ -113,6 +139,9 @@ const SessionCard: React.FC<SessionCardProps> = observer(({
               <span className="text-xs text-gray-500">Full</span>
             )
           )}
+          {hasEnded && (
+            <span className="text-xs text-gray-500 dark:text-gray-400">Ended</span>
+          )}
         </div>
       </div>
     );
@@ -122,7 +151,7 @@ const SessionCard: React.FC<SessionCardProps> = observer(({
     <div
       className={`
         rounded-xl border overflow-hidden
-        ${isCancelled
+        ${isCancelled || hasEnded
           ? "bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600"
           : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"}
       `}
@@ -155,6 +184,10 @@ const SessionCard: React.FC<SessionCardProps> = observer(({
             {isCancelled ? (
               <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
                 Cancelled
+              </span>
+            ) : hasEnded ? (
+              <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                Ended
               </span>
             ) : isFull ? (
               <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
@@ -260,7 +293,7 @@ const SessionCard: React.FC<SessionCardProps> = observer(({
       </div>
 
       {/* Action button */}
-      {isAuthenticated && !isCancelled && (
+      {isAuthenticated && !isCancelled && !hasEnded && (
         <div className="px-4 pb-4">
           {isAttending ? (
             <button
@@ -286,6 +319,64 @@ const SessionCard: React.FC<SessionCardProps> = observer(({
               Session Full
             </button>
           )}
+        </div>
+      )}
+      {hasEnded && (
+        <div className="px-4 pb-4">
+          <button
+            disabled
+            className="w-full py-2 px-4 rounded-lg bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400 font-medium text-sm cursor-not-allowed"
+          >
+            Session Ended
+          </button>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="text-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                Confirm Attendance
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                You're about to join this session:
+              </p>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-6">
+              {session.title && (
+                <p className="font-semibold text-lg mb-2">{session.title}</p>
+              )}
+              <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                <p>📅 {sessionDateFormatted}</p>
+                <p>🕐 {formatTime(session.startTime)} - {formatTime(session.endTime)}</p>
+                {session.venueId && <p>📍 {session.venueId.name}</p>}
+                {session.coachId && <p>👤 Coach: {session.coachId.displayName}</p>}
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-4">
+              A confirmation email will be sent to your registered email address.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-2 px-4 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium text-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAttend}
+                disabled={sessionStore.loading}
+                className="flex-1 py-2 px-4 rounded-lg bg-green-600 text-white hover:bg-green-700 font-medium text-sm transition-colors disabled:opacity-50"
+              >
+                {sessionStore.loading ? "Joining..." : "Confirm & Join"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

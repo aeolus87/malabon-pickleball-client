@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { observer } from "mobx-react-lite";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { venueStore, Venue } from "../../stores/VenueStore";
 import { sessionStore, Session } from "../../stores/SessionStore";
+import { authStore } from "../../stores/AuthStore";
 import OptimizedImage from "../../components/OptimizedImage";
 import Avatar from "../../components/Avatar";
 
@@ -59,9 +60,22 @@ interface EventCardProps {
 }
 
 const EventCard: React.FC<EventCardProps> = observer(({ session, onJoin, onLeave }) => {
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const isAttending = sessionStore.isUserAttending(session._id);
   const isFull = session.attendees.length >= session.maxPlayers;
   const spotsLeft = session.maxPlayers - session.attendees.length;
+
+  // Check if session has ended
+  const isEnded = () => {
+    const now = new Date();
+    const sessionDate = new Date(session.date);
+    const [endHours, endMinutes] = session.endTime.split(":").map(Number);
+    const sessionEndTime = new Date(sessionDate);
+    sessionEndTime.setHours(endHours, endMinutes, 0, 0);
+    return now > sessionEndTime;
+  };
+
+  const hasEnded = isEnded();
 
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(":");
@@ -89,115 +103,190 @@ const EventCard: React.FC<EventCardProps> = observer(({ session, onJoin, onLeave
     });
   };
 
+  const sessionDateFormatted = new Date(session.date).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  const handleJoinClick = () => {
+    setShowConfirmModal(true);
+  };
+
+  const confirmJoin = () => {
+    setShowConfirmModal(false);
+    onJoin(session._id);
+  };
+
   return (
-    <div className="bg-white dark:bg-dark-card rounded-xl shadow-md overflow-hidden dark:border dark:border-dark-border">
-      <div className="p-4">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <span className="text-xs font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full">
-              {formatDate(session.date)}
-            </span>
-            {session.title && (
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-2">
-                {session.title}
-              </h3>
-            )}
-          </div>
-          <div className="text-right">
-            <span className={`text-sm font-semibold ${isFull ? "text-red-500" : "text-green-600 dark:text-green-400"}`}>
-              {spotsLeft} spots
-            </span>
-          </div>
-        </div>
-
-        {/* Time & Venue */}
-        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
-          <div className="flex items-center gap-1.5">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="font-medium">{formatTime(session.startTime)} - {formatTime(session.endTime)}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            </svg>
-            <span>{session.venueId?.name || "TBD"}</span>
-          </div>
-        </div>
-
-        {/* Coach */}
-        {session.coachId && (
-          <Link 
-            to={`/profile/${session.coachId._id}`}
-            className="flex items-center gap-2 mb-3 p-2 bg-amber-50 dark:bg-amber-900/10 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/20 transition-colors"
-          >
-            <Avatar
-              src={session.coachId.photoURL}
-              name={session.coachId.displayName}
-              size="sm"
-            />
+    <>
+      <div className="bg-white dark:bg-dark-card rounded-xl shadow-md overflow-hidden dark:border dark:border-dark-border h-full flex flex-col">
+        <div className="p-4 flex flex-col flex-1">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-3">
             <div>
-              <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Coach</span>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:underline">
-                {session.coachId.displayName || "Coach"}
-              </p>
+              <span className="text-xs font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full">
+                {formatDate(session.date)}
+              </span>
+              {session.title && (
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-2">
+                  {session.title}
+                </h3>
+              )}
             </div>
-          </Link>
-        )}
+            <div className="text-right">
+              <span className={`text-sm font-semibold ${isFull ? "text-red-500" : "text-green-600 dark:text-green-400"}`}>
+                {spotsLeft} spots
+              </span>
+            </div>
+          </div>
 
-        {/* Attendees */}
-        <div className="flex items-center justify-between">
-          <div className="flex -space-x-2">
-            {session.attendees.slice(0, 5).map((attendee) => (
-              <Link
-                key={attendee._id}
-                to={`/profile/${attendee._id}`}
-                className="hover:z-10"
+          {/* Time & Venue */}
+          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
+            <div className="flex items-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="font-medium">{formatTime(session.startTime)} - {formatTime(session.endTime)}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              </svg>
+              <span>{session.venueId?.name || "TBD"}</span>
+            </div>
+          </div>
+
+          {/* Coach - shows placeholder if no coach to maintain consistent height */}
+          <div className="mb-3 min-h-[52px]">
+            {session.coachId ? (
+              <Link 
+                to={`/profile/${session.coachId._id}`}
+                className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-900/10 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/20 transition-colors"
               >
                 <Avatar
-                  src={attendee.photoURL}
-                  name={attendee.displayName}
-                  size="xs"
-                  className="ring-2 ring-white dark:ring-gray-800"
+                  src={session.coachId.photoURL}
+                  name={session.coachId.displayName}
+                  size="sm"
                 />
+                <div>
+                  <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Coach</span>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:underline">
+                    {session.coachId.displayName || "Coach"}
+                  </p>
+                </div>
               </Link>
-            ))}
-            {session.attendees.length > 5 && (
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 ring-2 ring-white dark:ring-gray-800 text-[10px] font-medium">
-                +{session.attendees.length - 5}
-              </span>
-            )}
-            {session.attendees.length === 0 && (
-              <span className="text-xs text-gray-400">No attendees yet</span>
-            )}
+            ) : null}
           </div>
 
-          {/* Action */}
-          {isAttending ? (
-            <button
-              onClick={() => onLeave(session._id)}
-              className="px-4 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30"
-            >
-              Leave
-            </button>
-          ) : (
-            <button
-              onClick={() => onJoin(session._id)}
-              disabled={isFull}
-              className={`px-4 py-1.5 text-sm font-medium rounded-lg ${
-                isFull
-                  ? "bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed"
-                  : "bg-green-600 text-white hover:bg-green-700"
-              }`}
-            >
-              {isFull ? "Full" : "Join"}
-            </button>
-          )}
+          {/* Attendees & Action - pushed to bottom */}
+          <div className="flex items-center justify-between mt-auto">
+            <div className="flex -space-x-2">
+              {session.attendees.slice(0, 5).map((attendee) => (
+                <Link
+                  key={attendee._id}
+                  to={`/profile/${attendee._id}`}
+                  className="hover:z-10"
+                >
+                  <Avatar
+                    src={attendee.photoURL}
+                    name={attendee.displayName}
+                    size="xs"
+                    className="ring-2 ring-white dark:ring-gray-800"
+                  />
+                </Link>
+              ))}
+              {session.attendees.length > 5 && (
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 ring-2 ring-white dark:ring-gray-800 text-[10px] font-medium">
+                  +{session.attendees.length - 5}
+                </span>
+              )}
+              {session.attendees.length === 0 && (
+                <span className="text-xs text-gray-400">No attendees yet</span>
+              )}
+            </div>
+
+            {/* Action */}
+            {authStore.isAuthenticated && !hasEnded && (
+              isAttending ? (
+                <button
+                  onClick={() => onLeave(session._id)}
+                  className="px-4 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30"
+                >
+                  Leave
+                </button>
+              ) : (
+                <button
+                  onClick={handleJoinClick}
+                  disabled={isFull}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-lg ${
+                    isFull
+                      ? "bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed"
+                      : "bg-green-600 text-white hover:bg-green-700"
+                  }`}
+                >
+                  {isFull ? "Full" : "Join"}
+                </button>
+              )
+            )}
+            {hasEnded && (
+              <span className="px-4 py-1.5 text-sm font-medium text-gray-400 dark:text-gray-500">
+                Ended
+              </span>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="text-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                Confirm Attendance
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                You're about to join this session:
+              </p>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-6">
+              {session.title && (
+                <p className="font-semibold text-lg mb-2 text-gray-900 dark:text-gray-100">{session.title}</p>
+              )}
+              <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                <p>📅 {sessionDateFormatted}</p>
+                <p>🕐 {formatTime(session.startTime)} - {formatTime(session.endTime)}</p>
+                {session.venueId && <p>📍 {session.venueId.name}</p>}
+                {session.coachId && <p>👤 Coach: {session.coachId.displayName}</p>}
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-4">
+              A confirmation email will be sent to your registered email address.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-2 px-4 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium text-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmJoin}
+                disabled={sessionStore.loading}
+                className="flex-1 py-2 px-4 rounded-lg bg-green-600 text-white hover:bg-green-700 font-medium text-sm transition-colors disabled:opacity-50"
+              >
+                {sessionStore.loading ? "Joining..." : "Confirm & Join"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 });
 
@@ -205,11 +294,29 @@ const EventCard: React.FC<EventCardProps> = observer(({ session, onJoin, onLeave
 // Main Venues Page
 // ============================================
 const VenuesPage: React.FC = observer(() => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>("today");
   const [loading, setLoading] = useState(true);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState("");
   const [isError, setIsError] = useState(false);
+  const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
+
+  // Check for password change modal flag (after account unlock)
+  useEffect(() => {
+    const shouldShow = sessionStorage.getItem("showPasswordChangeModal");
+    if (shouldShow === "true") {
+      setShowPasswordChangeModal(true);
+      sessionStorage.removeItem("showPasswordChangeModal");
+    }
+  }, []);
+
+  const handlePasswordChangeChoice = (changePassword: boolean) => {
+    setShowPasswordChangeModal(false);
+    if (changePassword) {
+      navigate("/settings");
+    }
+  };
 
   const venues = venueStore.venues;
   const allSessions = sessionStore.sessions.filter(s => s.status !== "cancelled");
@@ -460,6 +567,58 @@ const VenuesPage: React.FC = observer(() => {
           }`}
         >
           {confirmationMessage}
+        </div>
+      )}
+
+      {/* Password Change Modal (after account unlock) */}
+      {showPasswordChangeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                Welcome Back!
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                Your account has been unlocked successfully.
+              </p>
+            </div>
+
+            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                    Security Recommendation
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                    Your account was locked due to multiple failed login attempts. We recommend changing your password for security.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => handlePasswordChangeChoice(true)}
+                className="w-full py-3 px-4 rounded-lg bg-green-600 text-white hover:bg-green-700 font-medium text-sm transition-colors"
+              >
+                Change Password
+              </button>
+              <button
+                onClick={() => handlePasswordChangeChoice(false)}
+                className="w-full py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium text-sm transition-colors"
+              >
+                Not Now
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

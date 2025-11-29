@@ -197,8 +197,12 @@ class AuthStore {
 
   async getGoogleAuthUrl(): Promise<string> {
     try {
+      // Clear any stale code verifier first
+      sessionStorage.removeItem("codeVerifier");
+      
       const codeVerifier = this.generateCodeVerifier();
-      localStorage.setItem("codeVerifier", codeVerifier);
+      // Use sessionStorage to prevent cross-tab issues
+      sessionStorage.setItem("codeVerifier", codeVerifier);
 
       const response = await axios.get("/auth/google/url", {
         params: { codeVerifier },
@@ -235,7 +239,8 @@ class AuthStore {
     this.setLoadingState(true);
 
     try {
-      const codeVerifier = localStorage.getItem("codeVerifier");
+      // Try sessionStorage first (new), then localStorage (legacy fallback)
+      const codeVerifier = sessionStorage.getItem("codeVerifier") || localStorage.getItem("codeVerifier");
 
       if (!codeVerifier) {
         throw new Error("Code verifier not found. Please try logging in again.");
@@ -246,6 +251,8 @@ class AuthStore {
         codeVerifier,
       });
 
+      // Clean up both storages
+      sessionStorage.removeItem("codeVerifier");
       localStorage.removeItem("codeVerifier");
 
       runInAction(() => {
@@ -254,6 +261,8 @@ class AuthStore {
 
       return this.user;
     } catch (error: any) {
+      // Clean up both storages on error
+      sessionStorage.removeItem("codeVerifier");
       localStorage.removeItem("codeVerifier");
 
       // Check if we're already authenticated despite the error
@@ -322,6 +331,7 @@ class AuthStore {
     } catch (error: any) {
       const errorCode = error.response?.data?.code;
       const errorMessage = error.response?.data?.error || "Invalid credentials";
+      const email = error.response?.data?.email;
 
       // Preserve EMAIL_NOT_VERIFIED error code for LoginPage to handle
       if (errorCode === "EMAIL_NOT_VERIFIED") {
@@ -331,8 +341,43 @@ class AuthStore {
         throw customError;
       }
 
+      // Preserve ACCOUNT_LOCKED error code for LoginPage to handle
+      if (errorCode === "ACCOUNT_LOCKED") {
+        const customError: any = new Error(errorMessage);
+        customError.code = "ACCOUNT_LOCKED";
+        customError.email = email;
+        this.setLoadingState(false, errorMessage);
+        throw customError;
+      }
+
       this.setLoadingState(false, errorMessage);
       return null;
+    }
+  }
+
+  async unlockAccount(email: string, code: string): Promise<User | null> {
+    this.setLoadingState(true);
+    try {
+      const response = await axios.post("/auth/unlock", { email, code });
+      // Unlock returns token + user - log them in directly
+      runInAction(() => {
+        this.setAuthData(response.data.token, response.data.user);
+      });
+      return this.user;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || "Failed to unlock account";
+      this.setLoadingState(false, errorMessage);
+      throw new Error(errorMessage);
+    }
+  }
+
+  async resendUnlockCode(email: string): Promise<boolean> {
+    try {
+      await axios.post("/auth/resend-unlock-code", { email });
+      return true;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || "Failed to resend unlock code";
+      throw new Error(errorMessage);
     }
   }
 

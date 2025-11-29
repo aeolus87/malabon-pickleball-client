@@ -29,6 +29,9 @@ const SuperAdminLogin = lazy(() => import("./pages/SuperAdminLogin"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const UserProfilePage = lazy(() => import("./pages/UserProfilePage"));
 const CoachPage = lazy(() => import("./pages/CoachPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 
 // Protected route component using MobX auth store
 interface ProtectedRouteProps {
@@ -286,6 +289,8 @@ const App: React.FC = observer(() => {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/profile/:userId" element={<UserProfilePage />} />
           <Route path="/superadmin/login" element={<SuperAdminLogin />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Protected Routes */}
           <Route
@@ -317,6 +322,14 @@ const App: React.FC = observer(() => {
             element={
               <ProtectedRoute>
                 <ClubDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
               </ProtectedRoute>
             }
           />

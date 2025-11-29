@@ -391,6 +391,26 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
                 </button>
               </li>
 
+              {/* Settings */}
+              <li>
+                <Link
+                  to="/settings"
+                  className={`flex items-center ${
+                    isSidebarCollapsed && !isMobile ? "justify-center px-2 py-3" : "px-3 py-2.5"
+                  } text-sm font-medium transition-colors rounded-lg ${
+                    isActive("/settings")
+                      ? "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-gray-100"
+                  }`}
+                  onClick={() => isMobile && setIsMenuOpen(false)}
+                >
+                  <span className={`${!(isSidebarCollapsed && !isMobile) ? "mr-3" : ""}`}>
+                    <Settings size={20} />
+                  </span>
+                  {!(isSidebarCollapsed && !isMobile) && <span>Settings</span>}
+                </Link>
+              </li>
+
               {/* Logout */}
               <li className="mt-4">
                 <button
@@ -436,6 +456,8 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
                 ? "Admin Panel"
                 : location.pathname === "/superadmin"
                 ? "Super Admin"
+                : location.pathname === "/settings"
+                ? "Settings"
                 : "Home"}
             </div>
           </div>
