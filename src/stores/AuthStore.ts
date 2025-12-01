@@ -6,6 +6,7 @@ import {
 } from "mobx";
 import axios from "axios";
 import { socketStore } from "./SocketStore";
+import { userStore } from "./UserStore";
 
 // Types for the store
 export type UserRole = "player" | "coach" | "admin" | "superadmin";
@@ -327,6 +328,12 @@ class AuthStore {
       runInAction(() => {
         this.setAuthData(response.data.token, response.data.user);
       });
+      
+      // Ensure full profile is loaded after login to get complete user data including role
+      if (this.user) {
+        userStore.loadProfile();
+      }
+      
       return this.user;
     } catch (error: any) {
       const errorCode = error.response?.data?.code;

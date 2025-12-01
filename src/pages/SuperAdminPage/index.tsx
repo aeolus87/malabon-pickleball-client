@@ -40,14 +40,18 @@ const SuperAdminPage: React.FC = observer(() => {
     fetchAdmins();
   }, [navigate, isSuperAdmin]);
 
+  // Update fetchUsers to extract the users array from response.data
   const fetchUsers = async () => {
     setLoading(true);
+    setError("");
     try {
       const response = await axios.get("/users/all");
-      setUsers(response.data);
-    } catch (error) {
+      // Extract the users array from the response structure { users: [...], pagination: {...} }
+      setUsers(Array.isArray(response.data.users) ? response.data.users : []);
+    } catch (error: any) {
       console.error("Error fetching users:", error);
       setError("Failed to load users");
+      setUsers([]); // Fallback to empty array
     } finally {
       setLoading(false);
     }
@@ -324,7 +328,9 @@ const SuperAdminPage: React.FC = observer(() => {
             </h2>
           </div>
           <div className="p-6">
-            {users.length === 0 ? (
+            {loading ? (
+              <p className="text-gray-500 dark:text-gray-400">Loading users...</p>
+            ) : users.length === 0 ? (
               <p className="text-gray-500 dark:text-gray-400">
                 No users found.
               </p>

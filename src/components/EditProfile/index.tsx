@@ -172,13 +172,13 @@ const EditProfile: React.FC<EditProfileProps> = observer(
       }
     };
 
-    const uploadImage = async (file: File): Promise<string> => {
-      // Ask backend to sign the upload
+    // Update uploadImage function to accept folder parameter
+    const uploadImage = async (file: File, folder: string): Promise<string> => {
       const signRes = await axios.post("/uploads/sign", {
-        folder: "profile_pictures",
+        folder: folder,  // "profile-photos" or "cover-photos"
       });
 
-      const { timestamp, signature, api_key, cloud_name, folder } = signRes.data;
+      const { timestamp, signature, api_key, cloud_name } = signRes.data;
 
       const formData = new FormData();
       formData.append("file", file);
@@ -198,6 +198,7 @@ const EditProfile: React.FC<EditProfileProps> = observer(
       return data.secure_url as string;
     };
 
+    // Update handleSave to use correct folder for each upload type
     const handleSave = async () => {
       setLoading(true);
       setError(null);
@@ -208,25 +209,13 @@ const EditProfile: React.FC<EditProfileProps> = observer(
           bio,
         };
 
-        if (userStore.profile) {
-          runInAction(() => {
-            if (userStore.profile) {
-              userStore.profile = {
-                ...userStore.profile,
-                displayName,
-                bio,
-              };
-            }
-          });
-        }
-
         if (profilePicture) {
-          const photoURL = await uploadImage(profilePicture);
+          const photoURL = await uploadImage(profilePicture, "profile-photos");
           updates.photoURL = photoURL;
         }
 
         if (coverPhoto) {
-          const coverPhotoURL = await uploadImage(coverPhoto);
+          const coverPhotoURL = await uploadImage(coverPhoto, "cover-photos");
           updates.coverPhoto = coverPhotoURL;
         }
 

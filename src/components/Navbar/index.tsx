@@ -14,6 +14,8 @@ import {
   Sun,
   Moon,
   Search,
+  ShieldCheck,  // For Admin
+  Crown,        // For Super Admin
 } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { authStore } from "../../stores/AuthStore";
@@ -249,17 +251,14 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
           </div>
 
           {/* Navigation Links */}
-          <div className="flex-grow overflow-y-auto py-2">
-            <ul className={`space-y-1 ${isSidebarCollapsed && !isMobile ? "px-2" : "px-3"}`}>
+          {/* Update the sidebar navigation container to ensure scrolling works properly */}
+          <div className="flex-grow overflow-y-auto py-2 max-h-[calc(100vh-200px)]">
+            <ul className="space-y-1">
               {navigationLinks.map((item) => (
                 <li key={item.path}>
                   <Link
                     to={item.path}
-                    className={`flex items-center ${
-                      isSidebarCollapsed && !isMobile
-                        ? "justify-center px-2 py-3"
-                        : "px-3 py-2.5"
-                    } text-sm font-medium transition-colors rounded-lg ${
+                    className={`flex items-center justify-between px-3 py-2.5 text-sm font-medium transition-colors rounded-lg w-full ${
                       isActive(item.path)
                         ? "bg-brand-100 text-brand-800 dark:bg-brand-900/30 dark:text-brand-300"
                         : "text-gray-600 hover:bg-brand-50 hover:text-brand-700 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-brand-300"
@@ -268,7 +267,7 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
                   >
                     <span className={`${!(isSidebarCollapsed && !isMobile) ? "mr-3" : ""}`}>{item.icon}</span>
                     {!(isSidebarCollapsed && !isMobile) && (
-                      <span>{item.label}</span>
+                      <span className="flex-1 text-left">{item.label}</span>
                     )}
                   </Link>
                 </li>
@@ -279,11 +278,7 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
                 <li>
                   <Link
                     to="/coach"
-                    className={`flex items-center ${
-                      isSidebarCollapsed && !isMobile
-                        ? "justify-center px-2 py-3"
-                        : "px-3 py-2.5"
-                    } text-sm font-medium transition-colors rounded-lg ${
+                    className={`flex items-center justify-between px-3 py-2.5 text-sm font-medium transition-colors rounded-lg w-full ${
                       isActive("/coach")
                         ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
                         : "text-gray-600 hover:bg-amber-50 hover:text-amber-700 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-amber-300"
@@ -297,7 +292,7 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
                       </svg>
                     </span>
                     {!(isSidebarCollapsed && !isMobile) && (
-                      <span>Coach Panel</span>
+                      <span className="flex-1 text-left">Coach Panel</span>
                     )}
                   </Link>
                 </li>
@@ -308,11 +303,7 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
                 <li>
                   <Link
                     to="/admin"
-                    className={`flex items-center ${
-                      isSidebarCollapsed && !isMobile
-                        ? "justify-center px-2 py-3"
-                        : "px-3 py-2.5"
-                    } text-sm font-medium transition-colors rounded-lg ${
+                    className={`flex items-center justify-between px-3 py-2.5 text-sm font-medium transition-colors rounded-lg w-full ${
                       isActive("/admin")
                         ? "bg-brand-100 text-brand-800 dark:bg-brand-900/30 dark:text-brand-300"
                         : "text-gray-600 hover:bg-brand-50 hover:text-brand-700 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-brand-300"
@@ -320,10 +311,10 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
                     onClick={() => isMobile && setIsMenuOpen(false)}
                   >
                     <span className={`${!(isSidebarCollapsed && !isMobile) ? "mr-3" : ""}`}>
-                      <Settings size={20} />
+                      <ShieldCheck size={20} />
                     </span>
                     {!(isSidebarCollapsed && !isMobile) && (
-                      <span>Admin Panel</span>
+                      <span className="flex-1 text-left">Admin Panel</span>
                     )}
                   </Link>
                 </li>
@@ -334,11 +325,7 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
                 <li>
                   <Link
                     to="/superadmin"
-                    className={`flex items-center ${
-                      isSidebarCollapsed && !isMobile
-                        ? "justify-center px-2 py-3"
-                        : "px-3 py-2.5"
-                    } text-sm font-medium transition-colors rounded-lg ${
+                    className={`flex items-center justify-between px-3 py-2.5 text-sm font-medium transition-colors rounded-lg w-full ${
                       isActive("/superadmin")
                         ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
                         : "text-gray-600 hover:bg-purple-50 hover:text-purple-700 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-purple-300"
@@ -346,10 +333,10 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
                     onClick={() => isMobile && setIsMenuOpen(false)}
                   >
                     <span className={`${!(isSidebarCollapsed && !isMobile) ? "mr-3" : ""}`}>
-                      <Settings size={20} />
+                      <Crown size={20} />
                     </span>
                     {!(isSidebarCollapsed && !isMobile) && (
-                      <span>Super Admin</span>
+                      <span className="flex-1 text-left">Super Admin</span>
                     )}
                   </Link>
                 </li>
@@ -358,25 +345,25 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
               {/* Search Users */}
               <li>
                 <button
+                  type="button"
                   onClick={() => setIsSearchOpen(true)}
-                  className={`w-full flex items-center ${
-                    isSidebarCollapsed && !isMobile ? "justify-center px-2 py-3" : "px-3 py-2.5"
-                  } text-sm font-medium transition-colors rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-gray-100`}
+                  className={`flex items-center justify-between px-3 py-2.5 text-sm font-medium transition-colors rounded-lg w-full text-gray-600 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-gray-100`}
                 >
                   <span className={`${!(isSidebarCollapsed && !isMobile) ? "mr-3" : ""}`}>
                     <Search size={20} />
                   </span>
-                  {!(isSidebarCollapsed && !isMobile) && <span>Search Users</span>}
+                  {!(isSidebarCollapsed && !isMobile) && (
+                    <span className="flex-1 text-left">Search Users</span>
+                  )}
                 </button>
               </li>
 
               {/* Theme Toggle */}
               <li>
                 <button
+                  type="button"
                   onClick={toggleTheme}
-                  className={`w-full flex items-center ${
-                    isSidebarCollapsed && !isMobile ? "justify-center px-2 py-3" : "px-3 py-2.5"
-                  } text-sm font-medium transition-colors rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-gray-100`}
+                  className={`flex items-center justify-between px-3 py-2.5 text-sm font-medium transition-colors rounded-lg w-full text-gray-600 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-gray-100`}
                 >
                   <span className={`${!(isSidebarCollapsed && !isMobile) ? "mr-3" : ""}`}>
                     {theme === "dark" ? (
@@ -386,7 +373,7 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
                     )}
                   </span>
                   {!(isSidebarCollapsed && !isMobile) && (
-                    <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+                    <span className="flex-1 text-left">{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
                   )}
                 </button>
               </li>
@@ -395,9 +382,7 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
               <li>
                 <Link
                   to="/settings"
-                  className={`flex items-center ${
-                    isSidebarCollapsed && !isMobile ? "justify-center px-2 py-3" : "px-3 py-2.5"
-                  } text-sm font-medium transition-colors rounded-lg ${
+                  className={`flex items-center justify-between px-3 py-2.5 text-sm font-medium transition-colors rounded-lg w-full ${
                     isActive("/settings")
                       ? "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
                       : "text-gray-600 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-dark-muted dark:hover:text-gray-100"
@@ -407,22 +392,25 @@ const Navbar: React.FC<NavbarProps> = observer(({ children }) => {
                   <span className={`${!(isSidebarCollapsed && !isMobile) ? "mr-3" : ""}`}>
                     <Settings size={20} />
                   </span>
-                  {!(isSidebarCollapsed && !isMobile) && <span>Settings</span>}
+                  {!(isSidebarCollapsed && !isMobile) && (
+                    <span className="flex-1 text-left">Settings</span>
+                  )}
                 </Link>
               </li>
 
               {/* Logout */}
               <li className="mt-4">
                 <button
+                  type="button"
                   onClick={handleLogout}
-                  className={`w-full flex items-center ${
-                    isSidebarCollapsed && !isMobile ? "justify-center px-2 py-3" : "px-3 py-2.5"
-                  } text-sm font-medium transition-colors rounded-lg text-red-600 hover:bg-red-50 hover:text-red-800 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300`}
+                  className={`flex items-center justify-between px-3 py-2.5 text-sm font-medium transition-colors rounded-lg w-full text-red-600 hover:bg-red-50 hover:text-red-800 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300`}
                 >
                   <span className={`${!(isSidebarCollapsed && !isMobile) ? "mr-3" : ""}`}>
                     <LogOut size={20} />
                   </span>
-                  {!(isSidebarCollapsed && !isMobile) && <span>Logout</span>}
+                  {!(isSidebarCollapsed && !isMobile) && (
+                    <span className="flex-1 text-left">Logout</span>
+                  )}
                 </button>
               </li>
             </ul>

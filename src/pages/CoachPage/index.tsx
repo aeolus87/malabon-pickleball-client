@@ -31,15 +31,19 @@ const CoachPage: React.FC = observer(() => {
   const [description, setDescription] = useState("");
 
   useEffect(() => {
+
     if (!canAccessCoachPanel) {
-      navigate("/");
+      console.log("Cannot access Coach Panel, redirecting to /");
+      navigate("/venues");
       return;
     }
 
     const initialize = async () => {
       try {
+        console.log("Initializing Coach Page...");
         // For admins/super admins, fetch all sessions; for coaches, fetch their own
         const filters = user?.role === "coach" ? { coachId: user?.id } : {};
+        console.log("Session filters:", filters);
         await Promise.all([
           venueStore.fetchVenues(),
           sessionStore.fetchSessions(filters),
