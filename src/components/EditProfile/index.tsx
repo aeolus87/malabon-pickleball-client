@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { observer } from "mobx-react-lite";
-import { reaction, runInAction } from "mobx";
+import { reaction } from "mobx";
 import { authStore } from "../../stores/AuthStore";
 import Avatar from "../Avatar";
 import { userStore } from "../../stores/UserStore";
