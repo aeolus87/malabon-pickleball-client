@@ -60,9 +60,10 @@ const SuperAdminPage: React.FC = observer(() => {
   const fetchAdmins = async () => {
     try {
       const response = await axios.get("/users/admins");
-      setAdminUsers(response.data);
+      setAdminUsers(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Error fetching admins:", error);
+      setAdminUsers([]); // Fallback to empty array
     }
   };
 
