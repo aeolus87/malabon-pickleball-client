@@ -29,14 +29,16 @@ const LoginPage = observer(({ deletedAccount }: LoginPageProps = {}) => {
   const isLoading = authStore.loading;
   const authError = authStore.error;
 
-  // Check URL query parameters for deleted account or idle logout status
+  // Check URL query parameters and sessionStorage for deleted account or idle logout status
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("deleted") === "true" || deletedAccount) {
       setAccountDeleted(true);
     }
-    if (params.get("idle") === "true") {
+    // Check both URL param and sessionStorage for idle logout
+    if (params.get("idle") === "true" || sessionStorage.getItem("idleLogout") === "true") {
       setIdleLogout(true);
+      sessionStorage.removeItem("idleLogout"); // Clear flag after reading
     }
   }, [location.search, deletedAccount]);
 

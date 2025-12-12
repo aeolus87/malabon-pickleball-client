@@ -195,10 +195,12 @@ const App: React.FC = observer(() => {
   // Idle timeout - logs out user after 5 minutes of inactivity
   const handleIdleLogout = useCallback(() => {
     setShowIdleWarning(false);
+    // Set flag before clearing auth so LoginPage can show the message
+    sessionStorage.setItem("idleLogout", "true");
     authStore.clearAuth();
     socketStore.disconnect();
     userStore.clearProfile();
-    navigate("/login?idle=true", { replace: true });
+    navigate("/login", { replace: true });
   }, [navigate]);
 
   useIdleTimeout({
