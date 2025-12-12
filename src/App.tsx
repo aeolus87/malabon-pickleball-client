@@ -202,8 +202,8 @@ const App: React.FC = observer(() => {
   }, [navigate]);
 
   useIdleTimeout({
-    timeout: 5 * 60 * 1000, // 5 minutes
-    warningBefore: 60 * 1000, // warn 1 minute before logout
+    timeout: 1 * 60 * 1000, // 1 minute (DEMO - change back to 5 minutes for production)
+    warningBefore: 30 * 1000, // warn 30 seconds before logout (DEMO)
     onIdle: handleIdleLogout,
     onWarn: () => setShowIdleWarning(true),
     onActive: () => setShowIdleWarning(false),
@@ -287,7 +287,7 @@ const App: React.FC = observer(() => {
           >
             <div className="rounded-md border border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/30 px-4 py-3 flex items-center justify-between gap-3">
               <p className="text-sm text-yellow-900 dark:text-yellow-100">
-                You’ve been inactive. You’ll be logged out in 1 minute.
+                You’ve been inactive. You’ll be logged out in 30 seconds.
               </p>
               <button
                 type="button"
