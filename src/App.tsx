@@ -1,5 +1,5 @@
 // src/App.tsx
-import React, { useEffect, lazy, Suspense, useCallback } from "react";
+import React, { useEffect, lazy, Suspense, useCallback, useState } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { reaction, runInAction } from "mobx";
@@ -190,9 +190,11 @@ const LoadingSpinner = () => (
 const App: React.FC = observer(() => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [showIdleWarning, setShowIdleWarning] = useState(false);
 
   // Idle timeout - logs out user after 5 minutes of inactivity
   const handleIdleLogout = useCallback(() => {
+    setShowIdleWarning(false);
     authStore.clearAuth();
     socketStore.disconnect();
     userStore.clearProfile();
@@ -201,7 +203,10 @@ const App: React.FC = observer(() => {
 
   useIdleTimeout({
     timeout: 5 * 60 * 1000, // 5 minutes
+    warningBefore: 60 * 1000, // warn 1 minute before logout
     onIdle: handleIdleLogout,
+    onWarn: () => setShowIdleWarning(true),
+    onActive: () => setShowIdleWarning(false),
     enabled: authStore.isAuthenticated,
   });
 
@@ -274,6 +279,26 @@ const App: React.FC = observer(() => {
 
   return (
     <Navbar>
+        {showIdleWarning && (
+          <div
+            className="mx-auto max-w-3xl mt-3 px-4"
+            role="alert"
+            aria-live="polite"
+          >
+            <div className="rounded-md border border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/30 px-4 py-3 flex items-center justify-between gap-3">
+              <p className="text-sm text-yellow-900 dark:text-yellow-100">
+                You’ve been inactive. You’ll be logged out in 1 minute.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowIdleWarning(false)}
+                className="shrink-0 rounded-md bg-yellow-600 text-white text-sm px-3 py-1.5 hover:bg-yellow-700"
+              >
+                I’m still here
+              </button>
+            </div>
+          </div>
+        )}
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
           {/* Public Routes */}
