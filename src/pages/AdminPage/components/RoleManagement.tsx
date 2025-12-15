@@ -27,7 +27,7 @@ const RoleManagement: React.FC = observer(() => {
     setLoading(true);
     try {
       const response = await axios.get("/users/all");
-      setUsers(response.data);
+      setUsers(response.data.users || []);
     } catch (err) {
       console.error("Failed to fetch users:", err);
       setError("Failed to load users");

@@ -25,11 +25,17 @@ const SessionCard: React.FC<SessionCardProps> = observer(({
   compact = false,
 }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const isAttending = sessionStore.isUserAttending(session._id);
   const isAuthenticated = authStore.isAuthenticated;
   const isFull = session.status === "full";
   const isCancelled = session.status === "cancelled";
   const spotsLeft = session.maxPlayers - session.attendees.length;
+  
+  // Check if current user can delete this session (admin or session coach)
+  const user = authStore.user;
+  const canDelete = user && (user.isAdmin || session.coachId?._id === user.id);
 
   // Check if session has ended
   const isEnded = () => {
@@ -78,6 +84,19 @@ const SessionCard: React.FC<SessionCardProps> = observer(({
       onLeave();
     } else {
       await sessionStore.leaveSession(session._id);
+    }
+  };
+
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    setDeleting(true);
+    const success = await sessionStore.deleteSession(session._id);
+    setDeleting(false);
+    if (success) {
+      setShowDeleteModal(false);
     }
   };
 
@@ -179,8 +198,8 @@ const SessionCard: React.FC<SessionCardProps> = observer(({
             </div>
           </div>
 
-          {/* Status badge */}
-          <div>
+          {/* Status badge and delete button */}
+          <div className="flex items-center gap-2">
             {isCancelled ? (
               <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
                 Cancelled
@@ -197,6 +216,18 @@ const SessionCard: React.FC<SessionCardProps> = observer(({
               <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                 {spotsLeft} spots left
               </span>
+            )}
+            {/* Delete button for admins/coaches on upcoming sessions */}
+            {canDelete && !hasEnded && !isCancelled && (
+              <button
+                onClick={handleDeleteClick}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                title="Delete session"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
             )}
           </div>
         </div>
@@ -374,6 +405,62 @@ const SessionCard: React.FC<SessionCardProps> = observer(({
                 className="flex-1 py-2 px-4 rounded-lg bg-green-600 text-white hover:bg-green-700 font-medium text-sm transition-colors disabled:opacity-50"
               >
                 {sessionStore.loading ? "Joining..." : "Confirm & Join"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                Delete Session
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                Are you sure you want to delete this session? This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-6">
+              {session.title && (
+                <p className="font-semibold text-lg mb-2">{session.title}</p>
+              )}
+              <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                <p>📅 {sessionDateFormatted}</p>
+                <p>🕐 {formatTime(session.startTime)} - {formatTime(session.endTime)}</p>
+                {session.venueId && <p>📍 {session.venueId.name}</p>}
+                <p>👥 {session.attendees.length} attendee{session.attendees.length !== 1 ? "s" : ""}</p>
+              </div>
+            </div>
+
+            {session.attendees.length > 0 && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 text-center mb-4">
+                ⚠️ This session has attendees who will be notified of the cancellation.
+              </p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="flex-1 py-2 px-4 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium text-sm transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="flex-1 py-2 px-4 rounded-lg bg-red-600 text-white hover:bg-red-700 font-medium text-sm transition-colors disabled:opacity-50"
+              >
+                {deleting ? "Deleting..." : "Delete Session"}
               </button>
             </div>
           </div>
